@@ -25,6 +25,9 @@ public class MainController {
     @GetMapping(value="/test")
     public @ResponseBody String test1(String a) {
 
+        if(a.isBlank()) {
+            return "fail";
+        }
         String last = "";
     
         list.add(a);

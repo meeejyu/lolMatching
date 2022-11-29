@@ -30,14 +30,13 @@
         $.ajax({
             url: '/test',
             type: 'get',
-            dataType:'json',
+            // dataType:'json',
             data: {"a" : $('#member').val()},
             success: function (r) {
-                console.log("ㅎㅇ");
-
-                // console.log("ㅎㅇ"+$('#member').val());
-                // console.log(r);
-
+                alert("ㅎㅇ");
+            },
+            error : function(request, status, error) {
+                console.log("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
             }
         });
     }
