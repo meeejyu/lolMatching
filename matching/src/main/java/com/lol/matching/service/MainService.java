@@ -24,6 +24,7 @@ public class MainService {
 
     public void sendMessage(org.springframework.messaging.Message<?> message) {
         // Message<?> newMessage = MessageBuilder.withPayload(message).build();
+        Message<?> newMessage = MessageBuilder.withPayload(message).build();
         queueMessagingTemplate.send("보낼 메세지", message);
     }
 }
