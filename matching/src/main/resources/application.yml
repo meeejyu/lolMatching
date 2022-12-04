@@ -2,3 +2,10 @@
 #   thymeleaf:
 #       prefix: classpath:templates/
 #       suffix: .html
+
+logging:
+    level:
+        com:
+            amazonaws:
+                util:
+                    EC2MetadataUtils: error
