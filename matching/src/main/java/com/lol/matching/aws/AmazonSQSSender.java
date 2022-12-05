@@ -1,11 +1,13 @@
 package com.lol.matching.aws;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,4 +34,18 @@ public class AmazonSQSSender implements AmazonSQSSenderImpl {
                 .withMessageDeduplicationId(UUID.randomUUID().toString());
         return amazonSQS.sendMessage(sendMessageRequest);
     }
+
+    // 메세지 가져오는 메소드
+	public void test() {
+
+		System.out.println("---------메세지 확인------");
+		List<Message> messages = amazonSQS.receiveMessage(url).getMessages();
+        System.out.println("리스트 사이즈 : " + messages.size());
+        System.out.println("메세지 확인 : "+messages.get(0));
+        for (int i = 0; i < messages.size(); i++) {
+            System.out.println(i+" 번째 "+"값 : "+messages.get(i).getBody());
+        }
+        System.out.println(messages.toString());
+
+	}
 }

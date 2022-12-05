@@ -23,7 +23,8 @@ public class AwsSqsListener {
 		log.info("-------------------------------------info {}", info);
 		log.info("-------------------------------------headers {}", headers);
         //수신후 삭제처리
-		ack.acknowledge();
+		// TODO : 삭제 조건 추가
+		// ack.acknowledge();
 	}
 
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.lol.matching.aws.AmazonSQSSender;
 import com.lol.matching.aws.AmazonSQSSenderImpl;
 import com.lol.matching.dto.EcmDto;
 
@@ -27,6 +28,7 @@ public class MainController {
     int listSize = 0;
 
     private final AmazonSQSSenderImpl amazonSQSSender;
+    // private final AmazonSQSSender amazonSQSSender2;
 
     @PostMapping("/send")
     @ResponseBody
@@ -36,10 +38,13 @@ public class MainController {
     }
 
     @GetMapping(value="/main")
+    @ResponseBody
     public String main() {
 
+        // amazonSQSSender2.test();
         System.out.println("메인을 스쳐지나감");
-        return "test.html";
+        // return "test.html";
+        return "OK";
     }
 
     @GetMapping(value="/test")
