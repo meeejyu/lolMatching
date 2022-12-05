@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AwsSqsListener {
 
-	@SqsListener(value = "${cloud.aws.sqs.queue.name}", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
+	@SqsListener(value = "${cloud.aws.sqs.queue.group.name}", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
 	public void listen(@Payload String info, @Headers Map<String, String> headers, Acknowledgment ack) {
 		log.info("-------------------------------------start SqsListener");
 		log.info("-------------------------------------info {}", info);

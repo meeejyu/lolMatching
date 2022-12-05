@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @Component
 public class AmazonSQSSender implements AmazonSQSSenderImpl {
     
-    @Value("${cloud.aws.sqs.queue.url}")
+    @Value("${cloud.aws.sqs.queue.group.url}")
     private String url;
 
     private final ObjectMapper objectMapper;

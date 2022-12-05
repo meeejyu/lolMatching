@@ -21,5 +21,28 @@ cloud:
       auto: false
     sqs:
       queue:
-        name: groupQueue.fifo	# AWS에서 생성한 Queue 이름
-        url: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueue.fifo # 생성한 SQS 큐 url
+        group:
+          name: groupQueue.fifo	# AWS에서 생성한 Queue 이름
+          url: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueue.fifo # 생성한 SQS 큐 url
+          
+          nameV1: groupQueueV1.fifo	
+          urlV1: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueueV1.fifo 
+          
+          nameV2: groupQueueV2.fifo	
+          urlV2: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueueV2.fifo 
+          
+          nameV3: groupQueueV3.fifo	
+          urlV3: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueueV3.fifo 
+          
+          nameV4: groupQueueV4.fifo	
+          urlV4: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueueV4.fifo 
+          
+          nameV5: groupQueueV5.fifo	
+          urlV5: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueueV5.fifo 
+          
+          nameV6: groupQueueV6.fifo	
+          urlV6: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueueV6.fifo 
+        
+        individual:
+          name: userInfo	
+          url: https://sqs.ap-northeast-2.amazonaws.com/843354017769/userInfo 
