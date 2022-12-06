@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.lol.matching.aws.AmazonSQSSender;
 import com.lol.matching.aws.AmazonSQSSenderImpl;
 import com.lol.matching.dto.EcmDto;
+import com.lol.matching.dto.UserMatchDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,14 @@ public class MainController {
     @ResponseBody
     public String send(@RequestBody EcmDto message) throws JsonProcessingException {
         amazonSQSSender.sendMessage(message);
+        return "OK";
+    }
+
+    @PostMapping("/match")
+    @ResponseBody
+    public String match(@RequestBody UserMatchDto userMatchDto) throws JsonProcessingException {
+        
+        // amazonSQSSender.sendMessage(userMatchDto);
         return "OK";
     }
 
