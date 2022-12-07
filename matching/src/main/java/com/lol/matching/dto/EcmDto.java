@@ -13,5 +13,7 @@ import lombok.Setter;
 public class EcmDto {
 	@NotEmpty(message = "ecmId값이 빈값입니다.")
 	private String ecmId;
+
+	private int test;
 }
 

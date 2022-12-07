@@ -1,12 +1,17 @@
 package com.lol.matching.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+@ToString
 @Getter
-@JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class GroupMatchDto {
+
+    // private int groupMatchId;
     
     private String groupId;
 

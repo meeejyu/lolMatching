@@ -11,10 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.lol.matching.aws.AmazonSQSSender;
-import com.lol.matching.aws.AmazonSQSSenderImpl;
 import com.lol.matching.dto.EcmDto;
 import com.lol.matching.dto.UserMatchDto;
+import com.lol.matching.service.MainService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,21 +27,15 @@ public class MainController {
     List<String> list = new ArrayList<>();
     int listSize = 0;
 
-    private final AmazonSQSSenderImpl amazonSQSSender;
-    // private final AmazonSQSSender amazonSQSSender2;
-
-    @PostMapping("/send")
-    @ResponseBody
-    public String send(@RequestBody EcmDto message) throws JsonProcessingException {
-        amazonSQSSender.sendMessage(message);
-        return "OK";
-    }
+    private final MainService mainService;
 
     @PostMapping("/match")
     @ResponseBody
     public String match(@RequestBody UserMatchDto userMatchDto) throws JsonProcessingException {
+        // 유저 아이디 중복 안되게 막기, 두번 요청은 안됨
         
-        // amazonSQSSender.sendMessage(userMatchDto);
+        mainService.sendMessage(userMatchDto);
+
         return "OK";
     }
 

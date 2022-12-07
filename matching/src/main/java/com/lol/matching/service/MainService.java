@@ -1,20 +1,63 @@
 package com.lol.matching.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.lol.matching.dto.GroupMatchDto;
+import com.lol.matching.dto.UserMatchDto;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class MainService {
     
-    // private final QueueMessagingTemplate queueMessagingTemplate;
+    @Value("${cloud.aws.sqs.queue.group.name}")
+    private String groupName;
 
-    // @Autowired
-    // public MainService(AmazonSQS amazonSQS) {
-    //     this.queueMessagingTemplate = new QueueMessagingTemplate((AmazonSQSAsync) amazonSQS);
-    // }
+    @Value("${cloud.aws.sqs.queue.individual.name}")
+    private String userName;
 
-    // public void sendMessage(org.springframework.messaging.Message<?> message) {
-    //     // Message<?> newMessage = MessageBuilder.withPayload(message).build();
-    //     Message<?> newMessage = MessageBuilder.withPayload(message).build();
-    //     queueMessagingTemplate.send("보낼 메세지", message);
-    // }
+    private final QueueMessagingTemplate queueMessagingTemplate;
+
+    @Autowired
+    public MainService(AmazonSQS amazonSQS) {
+        this.queueMessagingTemplate = new QueueMessagingTemplate((AmazonSQSAsync) amazonSQS);
+    }
+
+    // 유저 정보 가져오기
+    public void getUserMessage() {
+        UserMatchDto userMatchDto = queueMessagingTemplate.receiveAndConvert(userName, UserMatchDto.class);
+        System.out.println("SQS로부터 받은 메시지 : " + userMatchDto);
+    }
+    
+    public void getGroupMessage() {
+        GroupMatchDto groupMatchDto = queueMessagingTemplate.receiveAndConvert(groupName, GroupMatchDto.class);
+        System.out.println("SQS로부터 받은 메시지 : " + groupName);
+    }
+
+    public void sendMessage(UserMatchDto userMatchDto) {
+
+        int mmr = userMatchDto.getMmr();
+
+        int min = 100;
+        if(mmr>100) {
+            min = mmr - 50;
+        }
+        int max = mmr + 50;
+        
+        // 그룹 id 이름 어떻게 할지 좀 더 고민, 숫자는 별로인듯
+        String groupId = min+"_"+max;
+        
+        GroupMatchDto groupMatchDto = new GroupMatchDto(groupId, min, max);
+        log.info("SQS에 전달합니다 : ");
+        queueMessagingTemplate.convertAndSend(userName, userMatchDto);
+        queueMessagingTemplate.convertAndSend(groupName, groupMatchDto);
+
+      }
+
 }

@@ -22,8 +22,8 @@ cloud:
     sqs:
       queue:
         group:
-          name: groupQueue.fifo	# AWS에서 생성한 Queue 이름
-          url: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueue.fifo # 생성한 SQS 큐 url
+          name: groupQueue	# AWS에서 생성한 Queue 이름
+          url: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueue # 생성한 SQS 큐 url
           
           nameV1: groupQueueV1.fifo	
           urlV1: https://sqs.ap-northeast-2.amazonaws.com/843354017769/groupQueueV1.fifo 
