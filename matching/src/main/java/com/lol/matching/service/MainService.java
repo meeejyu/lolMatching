@@ -34,7 +34,7 @@ public class MainService {
         UserMatchDto userMatchDto = queueMessagingTemplate.receiveAndConvert(userName, UserMatchDto.class);
         System.out.println("SQS로부터 받은 메시지 : " + userMatchDto);
     }
-    
+
     public void getGroupMessage() {
         GroupMatchDto groupMatchDto = queueMessagingTemplate.receiveAndConvert(groupName, GroupMatchDto.class);
         System.out.println("SQS로부터 받은 메시지 : " + groupName);
@@ -47,7 +47,7 @@ public class MainService {
         int min = 100;
         if(mmr>100) {
             min = mmr - 50;
-        }
+    }
         int max = mmr + 50;
         
         // 그룹 id 이름 어떻게 할지 좀 더 고민, 숫자는 별로인듯
@@ -57,7 +57,7 @@ public class MainService {
         log.info("SQS에 전달합니다 : ");
         queueMessagingTemplate.convertAndSend(userName, userMatchDto);
         queueMessagingTemplate.convertAndSend(groupName, groupMatchDto);
-
-      }
+    
+    }
 
 }
