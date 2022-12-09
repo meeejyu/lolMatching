@@ -22,7 +22,7 @@ public class AwsSqsListener {
 
 
 	// 유저 정보 저장
-	@SqsListener(value = "${cloud.aws.sqs.queue.individual.name}", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
+	// @SqsListener(value = "${cloud.aws.sqs.queue.individual.name}", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
 	public void UserListen(@Payload UserMatchDto info, @Headers Map<String, String> headers, Acknowledgment ack) {
 		log.info("-------------------------------------start User SqsListener");
 		log.info("-------------------------------------info {}", info);
@@ -34,7 +34,7 @@ public class AwsSqsListener {
 	}
 
 	// 그룹 정보 저장
-	@SqsListener(value = "${cloud.aws.sqs.queue.group.name}", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
+	// @SqsListener(value = "${cloud.aws.sqs.queue.group.name}", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
 	public void GroupListen(@Payload GroupMatchDto info, @Headers Map<String, String> headers, Acknowledgment ack) {
 		log.info("-------------------------------------start Group SqsListener");
 		log.info("-------------------------------------info {}", info);

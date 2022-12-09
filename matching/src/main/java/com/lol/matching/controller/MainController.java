@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.lol.matching.dto.EcmDto;
+import com.lol.matching.aws.AwsSqsCreate;
 import com.lol.matching.dto.UserMatchDto;
 import com.lol.matching.service.MainService;
 
@@ -28,6 +28,19 @@ public class MainController {
     int listSize = 0;
 
     private final MainService mainService;
+
+    private final AwsSqsCreate awsSqsCreate;
+
+    @GetMapping(value="/create")
+    @ResponseBody
+    public String create() {
+
+        awsSqsCreate.createQueue();
+        // amazonSQSSender2.test();
+        System.out.println("큐 만들어짐 확인 바람");
+        // return "test.html";
+        return "OK";
+    }
 
     @PostMapping("/match")
     @ResponseBody

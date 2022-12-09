@@ -53,10 +53,10 @@ public class MainService {
         // 그룹 id 이름 어떻게 할지 좀 더 고민, 숫자는 별로인듯
         String groupId = min+"_"+max;
         
-        GroupMatchDto groupMatchDto = new GroupMatchDto(groupId, min, max);
+        // GroupMatchDto groupMatchDto = new GroupMatchDto(groupId, min, max);
         log.info("SQS에 전달합니다 : ");
         queueMessagingTemplate.convertAndSend(userName, userMatchDto);
-        queueMessagingTemplate.convertAndSend(groupName, groupMatchDto);
+        // queueMessagingTemplate.convertAndSend(groupName, groupMatchDto);
     
     }
 

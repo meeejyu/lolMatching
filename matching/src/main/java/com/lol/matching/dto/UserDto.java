@@ -14,6 +14,9 @@ public class UserDto {
 
     private String userId;
 
-    private String name;
+    private String position;
 
+    private int mmr;
+
+    private String rank;
 }
