@@ -33,9 +33,9 @@ public class MainController {
 
     @GetMapping(value="/create")
     @ResponseBody
-    public String create() {
+    public String create(@RequestBody UserMatchDto userMatchDto) {
 
-        awsSqsCreate.createQueue();
+        awsSqsCreate.createQueue(userMatchDto);
         // amazonSQSSender2.test();
         System.out.println("큐 만들어짐 확인 바람");
         // return "test.html";
