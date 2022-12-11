@@ -29,7 +29,7 @@ public class AwsSqsRead {
 
             System.out.println(messages.get(0).getBody());
             String test = messages.get(0).getBody();
-            String test2 = messages.get(1).getBody();
+            // String test2 = messages.get(1).getBody();
             userMatchDto = objectMapper.readValue(test, UserMatchDto.class);
 
             System.out.println(userMatchDto.getPosition());

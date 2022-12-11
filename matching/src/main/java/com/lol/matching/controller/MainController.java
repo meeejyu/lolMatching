@@ -51,7 +51,7 @@ public class MainController {
 
         awsSqsRead.readMessage("bronze_150_250");
 
-        System.out.println("메세지 확인 바람");
+        // System.out.println("메세지 확인 바람");
         return "OK";
     }
 
@@ -62,7 +62,16 @@ public class MainController {
         // bronze_150_250
         mainService.sendMessage(userMatchDto, "bronze_150_250");
 
-        System.out.println("메세지 확인 바람");
+        // System.out.println("메세지 확인 바람");
+        return "OK";
+    }
+
+    @GetMapping(value="/getList")
+    @ResponseBody
+    public String getList() {
+
+        awsSqsCreate.getQueues();
+
         return "OK";
     }
 
