@@ -40,24 +40,9 @@ public class MainService {
         System.out.println("SQS로부터 받은 메시지 : " + groupName);
     }
 
-    public void sendMessage(UserMatchDto userMatchDto) {
-
-        int mmr = userMatchDto.getMmr();
-
-        int min = 100;
-        if(mmr>100) {
-            min = mmr - 50;
-    }
-        int max = mmr + 50;
-        
-        // 그룹 id 이름 어떻게 할지 좀 더 고민, 숫자는 별로인듯
-        String groupId = min+"_"+max;
-        
-        // GroupMatchDto groupMatchDto = new GroupMatchDto(groupId, min, max);
+    public void sendMessage(UserMatchDto userMatchDto, String queueName) {
         log.info("SQS에 전달합니다 : ");
-        queueMessagingTemplate.convertAndSend(userName, userMatchDto);
-        // queueMessagingTemplate.convertAndSend(groupName, groupMatchDto);
-    
+        queueMessagingTemplate.convertAndSend(queueName, userMatchDto);
     }
 
 }

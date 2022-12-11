@@ -3,7 +3,6 @@ package com.lol.matching.controller;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.lol.matching.aws.AwsSqsCreate;
+import com.lol.matching.aws.AwsSqsRead;
 import com.lol.matching.dto.UserMatchDto;
 import com.lol.matching.service.MainService;
 
@@ -31,14 +31,38 @@ public class MainController {
 
     private final AwsSqsCreate awsSqsCreate;
 
+    private final AwsSqsRead awsSqsRead;
+
     @GetMapping(value="/create")
     @ResponseBody
     public String create(@RequestBody UserMatchDto userMatchDto) {
 
-        awsSqsCreate.createQueue(userMatchDto);
-        // amazonSQSSender2.test();
+        String queueName = awsSqsCreate.createQueue(userMatchDto);
+        mainService.sendMessage(userMatchDto, queueName);
+        awsSqsRead.readMessage(queueName);
+
         System.out.println("큐 만들어짐 확인 바람");
-        // return "test.html";
+        return "OK";
+    }
+
+    @GetMapping(value="/read")
+    @ResponseBody
+    public String read() {
+
+        awsSqsRead.readMessage("bronze_150_250");
+
+        System.out.println("메세지 확인 바람");
+        return "OK";
+    }
+
+    @GetMapping(value="/write")
+    @ResponseBody
+    public String write(@RequestBody UserMatchDto userMatchDto) {
+
+        // bronze_150_250
+        mainService.sendMessage(userMatchDto, "bronze_150_250");
+
+        System.out.println("메세지 확인 바람");
         return "OK";
     }
 
@@ -47,7 +71,7 @@ public class MainController {
     public String match(@RequestBody UserMatchDto userMatchDto) throws JsonProcessingException {
         // 유저 아이디 중복 안되게 막기, 두번 요청은 안됨
         
-        mainService.sendMessage(userMatchDto);
+        // mainService.sendMessage(userMatchDto);
 
         return "OK";
     }
