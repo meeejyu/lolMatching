@@ -25,7 +25,7 @@ public class AwsSqsCreate {
         String queueName = userMatchDto.getRank()+"_"+min+"_"+max;
 
         // 대기열 검토
-        getQueues();
+        getQueues(userMatchDto);
 
         CreateQueueRequest create_request = new CreateQueueRequest(queueName)
         .addAttributesEntry("DelaySeconds", "1") // 전송 지연
@@ -45,7 +45,7 @@ public class AwsSqsCreate {
         }
     }
 
-    public void getQueues() {
+    public void getQueues(UserMatchDto userMatchDto) {
 
         ListQueuesResult queuesResult = sqs.listQueues();
         for (String url : queuesResult.getQueueUrls()) {
@@ -55,8 +55,13 @@ public class AwsSqsCreate {
             String[] b = a[a.length-1].split("_");
             System.out.println("min값 : "+b[1]);
             System.out.println("max값 : "+b[2]);
-
+            if(Integer.parseInt(b[1]) <= userMatchDto.getMmr()) {
+                if(Integer.parseInt(b[2]) >= userMatchDto.getMmr()) {
+                    // 메세지 보내기
+                }
+            }
         }
+
     }
     
 }
