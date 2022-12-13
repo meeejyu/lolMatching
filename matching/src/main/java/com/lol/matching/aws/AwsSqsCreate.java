@@ -52,12 +52,14 @@ public class AwsSqsCreate {
             String[] a = url.split("/"); 
             System.out.println("내용 " + a[a.length-1]);
             System.out.println(url);
-            String[] b = a[a.length-1].split("_");
-            System.out.println("min값 : "+b[1]);
-            System.out.println("max값 : "+b[2]);
-            if(Integer.parseInt(b[1]) <= userMatchDto.getMmr()) {
-                if(Integer.parseInt(b[2]) >= userMatchDto.getMmr()) {
-                    // 메세지 보내기
+            if(a[a.length-1].contains("_")) {
+                String[] b = a[a.length-1].split("_");
+                System.out.println("min값 : "+b[1]);
+                System.out.println("max값 : "+b[2]);
+                if(Integer.parseInt(b[1]) <= userMatchDto.getMmr()) {
+                    if(Integer.parseInt(b[2]) >= userMatchDto.getMmr()) {
+                        System.out.println("할룽 범위 안에 잘 들어왓네 큐 이름 : " + a[a.length-1] + " 유저 mmr : " + userMatchDto.getMmr()  );
+                    }
                 }
             }
         }

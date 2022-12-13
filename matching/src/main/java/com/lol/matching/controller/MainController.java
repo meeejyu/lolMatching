@@ -45,6 +45,15 @@ public class MainController {
         return "OK";
     }
 
+    @GetMapping(value="/getList")
+    @ResponseBody
+    public String getList(@RequestBody UserMatchDto userMatchDto) {
+
+        awsSqsCreate.getQueues(userMatchDto);
+
+        return "OK";
+    }
+
     @GetMapping(value="/read")
     @ResponseBody
     public String read() {
@@ -63,15 +72,6 @@ public class MainController {
         mainService.sendMessage(userMatchDto, "bronze_150_250");
 
         // System.out.println("메세지 확인 바람");
-        return "OK";
-    }
-
-    @GetMapping(value="/getList")
-    @ResponseBody
-    public String getList() {
-
-        awsSqsCreate.getQueues();
-
         return "OK";
     }
 

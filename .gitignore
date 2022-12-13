@@ -1,2 +1,3 @@
 queueinfo/**
 matching/src/main/resources/awskey.yml
+sqs메시지전부를수신받는방법을찾지못해서최종sqs사용.zip
