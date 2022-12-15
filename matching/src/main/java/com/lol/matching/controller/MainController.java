@@ -39,7 +39,7 @@ public class MainController {
 
         String queueName = awsSqsCreate.createQueue(userMatchDto);
         mainService.sendMessage(userMatchDto, queueName);
-        awsSqsRead.readMessage(queueName);
+        // awsSqsRead.readMessage(queueName);
 
         System.out.println("큐 만들어짐 확인 바람");
         return "OK";
@@ -53,6 +53,26 @@ public class MainController {
 
         return "OK";
     }
+
+    // getQueueInfo
+    @GetMapping(value="/queueinfo")
+    @ResponseBody
+    public String queueinfo() {
+
+        awsSqsCreate.getQueueInfo();
+
+        return "OK";
+    }
+
+    @GetMapping(value="/deleteQueue")
+    @ResponseBody
+    public String deleteQueue() {
+
+        awsSqsCreate.deleteQueue();
+
+        return "OK";
+    }
+
 
     @GetMapping(value="/read")
     @ResponseBody

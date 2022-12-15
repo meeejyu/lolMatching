@@ -20,14 +20,19 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AwsSqsListener {
 
-
+	int a = 10;
+	
 	// 유저 정보 저장
-	// @SqsListener(value = "${cloud.aws.sqs.queue.individual.name}", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
+	// @SqsListener(value = "bronze_150_250", deletionPolicy = SqsMessageDeletionPolicy.NEVER)
 	public void UserListen(@Payload UserMatchDto info, @Headers Map<String, String> headers, Acknowledgment ack) {
 		log.info("-------------------------------------start User SqsListener");
 		log.info("-------------------------------------info {}", info);
-		// log.info("-------------------------------------headers {}", headers);
-        //수신후 삭제처리
+		log.info("-------------------------------------headers {}", headers);
+    
+	// 헤더정보 : ApproximateReceiveCount=24 폴링 횟수, 메세지 건넨 횟수
+		a--;
+	
+		//수신후 삭제처리
 		// TODO : 삭제 조건 추가
 		
 		// ack.acknowledge();
