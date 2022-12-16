@@ -61,21 +61,14 @@ public class RedisRepositoryConfig {
         redisTemplate.setConnectionFactory(redisConnectionFactory());  
         redisTemplate.setKeySerializer(new StringRedisSerializer());   // Key: String 
         redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
-        // redisTemplate.setValueSerializer(new StringRedisSerializer()); 
+
+        /*
+         * 해쉬 사용시 사용
+         */
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
         return redisTemplate;
     }
 
-    // @Bean
-    // public RedisTemplate<String, UserMatchDto> redisTemplateRead() {
-        
-    //     RedisTemplate<String, UserMatchDto> redisTemplate = new RedisTemplate<>(); 
-        
-    //     redisTemplate.setConnectionFactory(redisConnectionFactory());  
-    //     redisTemplate.setKeySerializer(new StringRedisSerializer());   // Key: String 
-    //     // redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
-    //     redisTemplate.setValueSerializer(new StringRedisSerializer()); 
-
-    //     return redisTemplate;
-    // }
 }
