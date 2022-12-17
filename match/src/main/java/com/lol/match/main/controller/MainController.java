@@ -89,46 +89,46 @@ public class MainController {
         // TODO : 해쉬맵이 있는지 체크하는 메소드 추가 필요
         String listName = isMap(mmr, userMatchDto.getRank());
 
-        // 맵이 없어서 새롭게 생성하는 경우
-        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        Map<String, Object> map = new HashMap<>();
+        System.out.println("listName : " + listName);
+        // // 맵이 없어서 새롭게 생성하는 경우
+        // HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        // Map<String, Object> map = new HashMap<>();
 
-        map.put("firstName", "Gyunny");
-        map.put("lastName", "Choi");
-        map.put("gender", "Man");
-        hashOperations.putAll("key", map);
+        // map.put("firstName", "Gyunny");
+        // map.put("lastName", "Choi");
+        // map.put("gender", "Man");
+        // hashOperations.putAll("key", map);
 
-        String firstName = (String) redisTemplate.opsForHash().get("key", "firstName");
-        String lastName = (String) redisTemplate.opsForHash().get("key", "lastName");
-        String gender = (String) redisTemplate.opsForHash().get("key", "gender");
-        System.out.println(firstName);
-        System.out.println(lastName);
-        System.out.println(gender);
+        // String firstName = (String) redisTemplate.opsForHash().get("key", "firstName");
+        // String lastName = (String) redisTemplate.opsForHash().get("key", "lastName");
+        // String gender = (String) redisTemplate.opsForHash().get("key", "gender");
+        // System.out.println(firstName);
+        // System.out.println(lastName);
+        // System.out.println(gender);
 
-        // String listname = "queue";
+        // // String listname = "queue";
 
-        int time = 1;
-        // GroupMatchDto groupMatchDto = new GroupMatchDto(listname, max, min, time);
+        // int time = 1;
+        // // GroupMatchDto groupMatchDto = new GroupMatchDto(listname, max, min, time);
 
-        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
-        operations.opsForList().remove("QueueList", time, operations);
-        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        // RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+        // operations.opsForList().remove("QueueList", time, operations);
+        // redisTemplate.setValueSerializer(new StringRedisSerializer());
 
-        List<Object> a = operations.opsForList().range("키이름", 0, operations.opsForList().size("QueueList")-1);
+        // List<Object> a = operations.opsForList().range("키이름", 0, operations.opsForList().size("QueueList")-1);
 
-        // 리스트는 있고, 11명이 되려고 할때 1초 쓰레드 추가
-        try {
+        // // 리스트는 있고, 11명이 되려고 할때 1초 쓰레드 추가
+        // try {
 
-            for (int i = 0; i < a.size(); i++) {
-                UserMatchDto userMatchDto2 = objectMapper.readValue(a.get(i).toString(), UserMatchDto.class);
-                System.out.println("값 나와랏! : " + userMatchDto2.toString());
-            }
+        //     for (int i = 0; i < a.size(); i++) {
+        //         UserMatchDto userMatchDto2 = objectMapper.readValue(a.get(i).toString(), UserMatchDto.class);
+        //         System.out.println("값 나와랏! : " + userMatchDto2.toString());
+        //     }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        // System.out.println(operations.opsForList().range("chatNumber" + idx, 0, -1));
-        // // Redis Data List 출력
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        // }
+
         return "OK";
     }
 
@@ -165,8 +165,6 @@ public class MainController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        // System.out.println(operations.opsForList().range("chatNumber" + idx, 0, -1));
-        // // Redis Data List 출력
         return "OK";
     }
 
@@ -178,67 +176,96 @@ public class MainController {
         return "ok";
     }
 
+    // 리스트값 들고오나?
+    @GetMapping("/keys")
+    @ResponseBody
+    public String keys() {
+        // Set<String> keys = redisTemplate.keys("posts:*");
+        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+        List<Object> queueList = operations.opsForList().range("list_test", 1, -1);
+        for(Object a : queueList) {
+            System.out.println("값 확인 : "+ a);
+        }
+
+        return "ok";
+    }
+
     // 맵이 있는지 확인
     private String isMap(int mmr, String rank) {
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+        redisTemplate.setValueSerializer(new StringRedisSerializer());
 
         String queueName = "";
         int min = mmr > 150 ? mmr - 50 : 100;
         int max = mmr + 50;
 
-        List<String> list = new ArrayList<>();
+        List<String> rankList = new ArrayList<>();
 
         if (rank.equals("Iron") || rank.equals("Bronze")) {
-            list.add("map:Iron");
-            list.add("map:Bronze");
-            list.add("map:Silver");
+            rankList.add("Iron");
+            rankList.add("Bronze");
+            rankList.add("Silver");
         } else if (rank.equals("Silver")) {
-            list.add("map:Iron");
-            list.add("map:Bronze");
-            list.add("map:Silver");
-            list.add("map:Gold");
+            rankList.add("Iron");
+            rankList.add("Bronze");
+            rankList.add("Silver");
+            rankList.add("Gold");
         } else if (rank.equals("Gold")) {
-            list.add("map:Silver");
-            list.add("map:Gold");
-            list.add("map:Platinum");
+            rankList.add("Silver");
+            rankList.add("Gold");
+            rankList.add("Platinum");
         } else if (rank.equals("Platinum")) {
-            list.add("map:Gold");
-            list.add("map:Platinum");
-            list.add("map:Emerald");
+            rankList.add("Gold");
+            rankList.add("Platinum");
+            rankList.add("Emerald");
         } else if (rank.equals("Emerald")) {
-            list.add("map:Platinum");
-            list.add("map:Emerald");
-            list.add("map:Diamond");
+            rankList.add("Platinum");
+            rankList.add("Emerald");
+            rankList.add("Diamond");
         } else if (rank.equals("Diamond")) {
-            list.add("map:Emerald");
-            list.add("map:Diamond");
-            list.add("map:Master");
+            rankList.add("Emerald");
+            rankList.add("Diamond");
+            rankList.add("Master");
         } else if (rank.equals("Master")) {
-            list.add("map:Diamond");
-            list.add("map:Master");
-            list.add("map:GrandMaster");
+            rankList.add("Diamond");
+            rankList.add("Master");
+            rankList.add("GrandMaster");
         } else if (rank.equals("GrandMaster")) {
-            list.add("map:Master");
-            list.add("map:GrandMaster");
+            rankList.add("Master");
+            rankList.add("GrandMaster");
         } else if (rank.equals("Challenger")) {
-            list.add("map:Challenger");
+            rankList.add("Challenger");
         }
-        for (int i = 0; i < list.size(); i++) {
 
-            List<Object> queueList = operations.opsForList().range("키이름", 0, operations.opsForList().size("QueueList")-1);
+        // Redis Data List 출력
+        List<Object> queueList = operations.opsForList().range("queueList", 1, -1);
+        List<String> rankFilterList = new ArrayList<>();
 
-            for (Object key : queueList) {
-                String[] name = String.valueOf(key).split("_");
-                System.out.println("min값 : " + name[1]);
-                System.out.println("max값 : " + name[2]);
-                if (Integer.parseInt(name[1]) <= min) {
-                    if (Integer.parseInt(name[2]) >= max) {
-                        System.out.println("범위 안에 잘 들어옴 큐 이름을 반환" + key);
-                        queueName = (String)key;
-                        return queueName;
-                    }
+        // 계급 필터링
+        for (Object key : queueList) {
+            String name = String.valueOf(key).split("_")[0];
+            System.out.println("rank : " + name);
+            for (int i = 0; i < rankList.size(); i++) {
+                if(name.equals(rankList.get(i))) {
+                    rankFilterList.add(key.toString());
                 }
-            }               
+            }
+        }    
+        for(String fileterList : rankFilterList) {
+            String minRange = String.valueOf(fileterList).split("_")[1];
+            String maxRange = String.valueOf(fileterList).split("_")[2];
+
+            System.out.println("min : " + minRange);
+            System.out.println("max : " + maxRange);
+            
+            if (Integer.parseInt(minRange) <= mmr) {
+                if (Integer.parseInt(maxRange) >= mmr) {
+                    System.out.println("범위 안에 잘 들어옴 큐 이름을 반환" + fileterList);
+                    queueName = fileterList;
+                    return queueName;
+                }
+            }           
         }
 
         queueName = rank+"_"+min+"_"+max;
