@@ -86,11 +86,28 @@ public class MainController {
 
         int mmr = userMatchDto.getMmr();
 
-        // TODO : 해쉬맵이 있는지 체크하는 메소드 추가 필요
+        // TODO : 해쉬맵이 있는지 체크하는 메소드 추가 필요, 맵값으로 삭제 확인해서 하기
         String listName = isMap(mmr, userMatchDto.getRank());
 
         System.out.println("listName : " + listName);
-        // // 맵이 없어서 새롭게 생성하는 경우
+
+        // 해당 큐가 있는지 확인 
+        Set<String> keys = redisTemplate.keys("map:"+listName);
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        if(keys.size() > 0) {
+            // 맵에 유저 정보 넣어주기
+            hashOperations.put("map:"+listName, userMatchDto.getUserId(), userMatchDto);
+        }
+        else {
+            // 맵을 새롭게 만들어준다
+            Map<String, Object> map = new HashMap<>();
+            hashOperations.put("map:"+listName, userMatchDto.getUserId(), userMatchDto);
+        }
+        redisTemplate.opsForList().rightPush("queueList", listName);
+
+
+        // 맵이 없어서 새롭게 생성하는 경우
         // HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         // Map<String, Object> map = new HashMap<>();
 
@@ -252,6 +269,7 @@ public class MainController {
                 }
             }
         }    
+        // mmr 범위 조정
         for(String fileterList : rankFilterList) {
             String minRange = String.valueOf(fileterList).split("_")[1];
             String maxRange = String.valueOf(fileterList).split("_")[2];
