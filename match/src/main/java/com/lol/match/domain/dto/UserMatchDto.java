@@ -25,6 +25,7 @@ public class UserMatchDto {
 
     private int time; // 24시에서 0시로 넘어갈때를 잘 고려해야함.
 
+    private String queueName;
     // private String groupId;
 
     // private int index; // 해당 그룹에 들어온 순서, 0~9번째까지

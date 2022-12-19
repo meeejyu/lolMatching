@@ -103,9 +103,9 @@ public class MainController {
             // 맵을 새롭게 만들어준다
             Map<String, Object> map = new HashMap<>();
             hashOperations.put("map:"+listName, userMatchDto.getUserId(), userMatchDto);
+            redisTemplate.opsForList().rightPush("queueList", listName);
         }
-        redisTemplate.opsForList().rightPush("queueList", listName);
-
+        // 뷰 단에 팀 정보 넘겨주기
 
         // 맵이 없어서 새롭게 생성하는 경우
         // HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -208,6 +208,56 @@ public class MainController {
         return "ok";
     }
 
+    // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
+    @GetMapping("/queueList/delete")
+    @ResponseBody
+    public String queueListDelete(@RequestBody UserMatchDto userMatchDto) {
+        // Set<String> keys = redisTemplate.keys("posts:*");
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        // redisTemplate.setValueSerializer(new StringRedisSerializer());
+        hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId());
+
+        return "ok";
+    }
+
+    // 대전 매칭 완료하기 
+    @GetMapping("/queueList/find")
+    @ResponseBody
+    public String queueListFind(@RequestBody UserMatchDto userMatchDto) {
+        
+        boolean condition = true;
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        // 계속 돌기
+        try {
+            while(condition) {
+                if(hashOperations.get("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId())==null) {
+                    System.out.println("본인이 대전을 찾는 와중에 취소한 경우");
+                    return "fail";
+                }
+                else {
+                    if(hashOperations.size("map:"+userMatchDto.getQueueName()) == Long.valueOf(10)) {
+
+                        condition = false;
+                    }
+                }
+                System.out.println("큐 사이즈 확인 : " + hashOperations.size("map:"+userMatchDto.getQueueName()));
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("이건 최종 큐 사이즈 : "+ hashOperations.size("map:"+userMatchDto.getQueueName()));
+        System.out.println("매칭 완료");
+        // 뷰단에 팀 정보를 넘겨줘야함
+        
+        return "ok";
+    }
+
+
+
     // 맵이 있는지 확인
     private String isMap(int mmr, String rank) {
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
@@ -262,7 +312,7 @@ public class MainController {
         // 계급 필터링
         for (Object key : queueList) {
             String name = String.valueOf(key).split("_")[0];
-            System.out.println("rank : " + name);
+            // System.out.println("rank : " + name);
             for (int i = 0; i < rankList.size(); i++) {
                 if(name.equals(rankList.get(i))) {
                     rankFilterList.add(key.toString());
@@ -274,9 +324,6 @@ public class MainController {
             String minRange = String.valueOf(fileterList).split("_")[1];
             String maxRange = String.valueOf(fileterList).split("_")[2];
 
-            System.out.println("min : " + minRange);
-            System.out.println("max : " + maxRange);
-            
             if (Integer.parseInt(minRange) <= mmr) {
                 if (Integer.parseInt(maxRange) >= mmr) {
                     System.out.println("범위 안에 잘 들어옴 큐 이름을 반환" + fileterList);
