@@ -1,13 +1,15 @@
 package com.lol.match.main.controller;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
@@ -146,6 +148,7 @@ public class MainController {
     @ResponseBody
     public String write(@RequestBody UserMatchDto userMatchDto) {
 
+        // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
         int mmr = userMatchDto.getMmr();
         int min = mmr > 150 ? mmr - 50 : 100;
         int max = mmr + 50;
@@ -251,11 +254,12 @@ public class MainController {
             while(condition) {
                 if(hashOperations.get("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId())==null) {
                     System.out.println("본인이 대전을 찾는 와중에 취소한 경우");
+                    queueCancle(userMatchDto, hashOperations);
                     return "fail";
                 }
                 else {
+                    queueChange(userMatchDto);
                     if(hashOperations.size("map:"+userMatchDto.getQueueName()) == Long.valueOf(10)) {
-
                         condition = false;
                     }
                 }
@@ -272,7 +276,80 @@ public class MainController {
         return "ok";
     }
 
+    // 대전 매칭 수락후 완료하기, 수락하기를 안누른 유저가 있으면 다시 대기열로 돌아가 queueList7에 첫번째로 넣어줌, 진행중
+    @GetMapping("/queueList/accept")
+    @ResponseBody
+    public String queueListAccept(@RequestBody UserMatchDto userMatchDto) {
+        
+        boolean condition = true;
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
+        // 계속 돌기
+        try {
+            while(condition) {
+                if(hashOperations.get("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId())==null) {
+                    System.out.println("본인이 대전을 찾는 와중에 취소한 경우");
+                    return "fail";
+                }
+                else {
+                    if(hashOperations.size("map:"+userMatchDto.getQueueName()) == Long.valueOf(10)) {
+
+                        condition = false;
+                    }
+                }
+                // System.out.println("큐 사이즈 확인 : " + hashOperations.size("map:"+userMatchDto.getQueueName()));
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // TODO : 나중에 필요할수도 있음
+        // redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        System.out.println("이건 최종 큐 사이즈 : "+ hashOperations.size("map:"+userMatchDto.getQueueName()));
+        System.out.println("매칭 완료");
+        // 뷰단에 팀 정보를 넘겨줘야함
+        
+        return "ok";
+    }
+
+    // 대전 찾기 중 실패
+    private void queueCancle(UserMatchDto userMatchDto, HashOperations<String, Object, Object> hashOperations) {
+        hashOperations.put("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition(), 
+        Integer.parseInt(hashOperations.get("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition()).toString())-1);
+            hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId());
+    }
+
+    private void queueChange(UserMatchDto userMatchDto) {
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+
+        LocalDateTime time = LocalDateTime.now();
+
+		String nowTime = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String queueName = "";
+		System.out.println("시간 : " + nowTime);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            Date nowDate = sdf.parse(nowTime);
+            Date originalDate = sdf.parse(userMatchDto.getQueueName().split("_")[3]);
+
+            if(nowDate.after(originalDate)) {
+                System.out.println("리스트 및 hashMap 변경");
+                // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
+                String[] queueList = userMatchDto.getQueueName().split("_");
+                int min = Integer.parseInt(queueList[1]) > 150 ? Integer.parseInt(queueList[1]) - 5 : 100;
+                int max = Integer.parseInt(queueList[1]) + 5;
+                String uuid = UUID.randomUUID().toString();
+                queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+"시간"+"_"+uuid;
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+    }
 
     // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
     // TODO : 포지션 고려 넣어야함 : 완료
@@ -324,7 +401,7 @@ public class MainController {
         }
 
         // Redis Data List 출력
-        List<Object> queueList = operations.opsForList().range("queueList", 1, -1);
+        List<Object> queueList = operations.opsForList().range("queueList1", 1, -1);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         List<String> rankFilterList = new ArrayList<>();
         List<String> positionList = new ArrayList<>();
@@ -363,10 +440,11 @@ public class MainController {
         else {
             // 일치하는 mmr이 없을 경우
             System.out.println("새롭게 큐를 추가함 ");
-            queueName = rank+"_"+min+"_"+max;
+            String uuid = UUID.randomUUID().toString();
+            queueName = rank+"_"+min+"_"+max+"_"+uuid;
             queueCreate(queueName, userMatchDto);
             hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 1);
-            redisTemplate.opsForList().rightPush("queueList", queueName);
+            redisTemplate.opsForList().rightPush("queueList1", queueName);
 
         }
 
@@ -375,10 +453,10 @@ public class MainController {
     }
 
     private void queueCreate(String queueName, UserMatchDto userMatchDto) {
+        userMatchDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
         hashOperations.put("map:"+queueName, userMatchDto.getUserId(), userMatchDto);
-
     }
 
     private String positionCheck(List<String> positionList, UserMatchDto userMatchDto, int min, int max) {
@@ -392,10 +470,13 @@ public class MainController {
             if(hashOperations.hasKey("position:"+positionList.get(i), userMatchDto.getPosition())) {
                 if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), userMatchDto.getPosition()).toString())>1) {
                     if(i==positionList.size()-1) {
-                        queueName = userMatchDto.getRank()+"_"+min+"_"+max;
+                        String uuid = UUID.randomUUID().toString();
+                        queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+uuid;
                         queueCreate(queueName, userMatchDto);
-                        System.out.println("일치하는 mmr이 있으나 포지션이 ");
+                        System.out.println("일치하는 mmr이 있으나 포지션이 없음.");
+                        System.out.println("큐 새로 생성");
                         hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 1);
+                        redisTemplate.opsForList().rightPush("queueList1", queueName);
                         return queueName;
                     }
                     else {
@@ -405,7 +486,7 @@ public class MainController {
                     }
                 }
                 else {
-                    // 포지션 자리가 존재해 기존의 큐에 값 추가
+                    // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 1인경우, 0인경우
                     queueName = positionList.get(i);
                     queueCreate(queueName, userMatchDto);
                     hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 2);
@@ -413,7 +494,7 @@ public class MainController {
                 }
             }
             else {
-                // 포지션 자리가 존재해 기존의 큐에 값 추가
+                // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 0인경우, 없는 경우
                 queueName = positionList.get(i);
                 queueCreate(queueName, userMatchDto);
                 hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 1);
