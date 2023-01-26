@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lol.match.domain.dto.GroupMatchDto;
 import com.lol.match.domain.dto.UserMatchDto;
@@ -33,59 +35,10 @@ public class MainController {
 
     private final ObjectMapper objectMapper;
 
-    // // TODO : 삭제 구현이 필요함, 좀 더 생각해봐야하는 부분
-    // @GetMapping("/match")
-    // @ResponseBody
-    // public String match(@RequestBody UserMatchDto userMatchDto) {
-
-    // int mmr = userMatchDto.getMmr();
-    // int min = mmr > 150 ? mmr - 50 : 100;
-    // int max = mmr + 50;
-
-    // String listname = "bronze_100_167";
-
-    // // String listname = "queue";
-
-    // int time = 1;
-    // GroupMatchDto groupMatchDto = new GroupMatchDto(listname, max, min, time);
-
-    // redisTemplate.opsForList().leftPush(listname, userMatchDto);
-    // redisTemplate.opsForList().leftPush("queue", groupMatchDto);
-
-    // // redisTemplate.opsForList().leftPush(listname+1, "");
-    // // redisTemplate.opsForList().leftPush(listname+2, "");
-    // // redisTemplate.opsForList().leftPush(listname+3, "");
-    // // redisTemplate.opsForList().leftPush(listname+4, "");
-    // // redisTemplate.opsForList().leftPush(listname+5, "");
-
-    // RedisOperations<String, Object> operations =
-    // redisTemplate.opsForList().getOperations();
-    // operations.opsForList().remove(listname, time, operations);
-    // redisTemplate.setValueSerializer(new StringRedisSerializer());
-
-    // List<Object> a = operations.opsForList().range(listname, 0, 9);
-
-    // // 리스트는 있고, 11명이 되려고 할때 1초 쓰레드 추가
-    // try {
-
-    // for (int i = 0; i < a.size(); i++) {
-    // UserMatchDto userMatchDto2 = objectMapper.readValue(a.get(i).toString(),
-    // UserMatchDto.class);
-    // System.out.println("값 나와랏! : "+userMatchDto2.toString());
-    // }
-
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // }
-    // // System.out.println(operations.opsForList().range("chatNumber" + idx, 0,
-    // -1)); // Redis Data List 출력
-    // return "OK";
-    // }
-
     // TODO : 삭제 구현이 필요함, 좀 더 생각해봐야하는 부분
     @GetMapping("/match")
     @ResponseBody
-    public String match(@RequestBody UserMatchDto userMatchDto) throws InterruptedException {
+    public String match(@RequestBody UserMatchDto userMatchDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
 
         int mmr = userMatchDto.getMmr();
 
@@ -94,25 +47,40 @@ public class MainController {
 
         System.out.println("listName : " + listName);
 
-        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
         // map size가 10보다 작을때는 계속 머무르기
         if(hashOperations.size("map:"+listName) < 10) {
-            queueCheck(hashOperations.size("map:"+listName), listName);
+            String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto.getUserId());
+            if(status.equals("cancel")) {
+                return "cancel";
+            }
         }
 
         return "OK";
     }
 
-        // 큐 사이즈 확인 10이면 재귀 메소드 탈출
-    private void queueCheck(Long size, String listName) throws InterruptedException {
+    // 큐 사이즈 확인 10이면 재귀 메소드 탈출
+    private String queueCheck(Long size, String listName, String id) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
-        if(size < 10) {
-            System.out.println("와서 뱅글뱅글 도는중 : "+size);
-            Thread.sleep(1000);
-            queueCheck(hashOperations.size("map:"+listName), listName);
-        } 
+        Object object = hashOperations.get("map:"+listName, id);
+        if(object==null) {
+            return "cancel";
+        }
+        else {
+            if(size < 10) {
+                System.out.println("와서 뱅글뱅글 도는중 : "+size);
+                Thread.sleep(1000);
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, id);
+                if(status.equals("cancel")) {
+                    return "cancel";
+                }
+            }
+            return "ok";
+        }
     }
 
     @GetMapping("/write")
