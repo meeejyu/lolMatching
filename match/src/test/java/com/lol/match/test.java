@@ -9,29 +9,9 @@ import java.util.Date;
 import org.junit.jupiter.api.Test;
 
 public class test {
-    
+
     @Test
 	void timeTest() {
-		// LocalDateTime time = LocalDateTime.now();
-
-		// String a = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-		// System.out.println("시간 : " + a);
-
-        // String b = "2022-12-20 15:18:11";
-        // SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        // try {
-        //     Date date1 = sdf.parse(a);
-        //     Date date2 = sdf.parse(b);
-
-        //     if(date2.after(date1)) {
-        //         System.out.println("잘 왔다 : ");
-        //     }
-        //     if(date1.after(date2)) {
-        //         System.out.println("왜 왔니? : ");
-        //     }
-        // } catch (ParseException e) {
-        //     e.printStackTrace();
-        // }
 
         LocalDateTime time = LocalDateTime.now();
 
@@ -51,4 +31,12 @@ public class test {
             e.printStackTrace();
         }
 	}
+
+    @Test
+    void redisTest(){
+
+
+
+
+    }
 }

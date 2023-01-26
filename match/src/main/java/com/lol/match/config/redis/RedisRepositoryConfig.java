@@ -10,7 +10,6 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import com.lol.match.domain.dto.UserMatchDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -53,6 +52,7 @@ public class RedisRepositoryConfig {
     //     return redisTemplate;
     // }
 
+    // TODO : 직렬화, 역직렬화 구조 생각하기
     @Bean
     public RedisTemplate<String, Object> redisTemplate() {
         

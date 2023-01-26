@@ -85,7 +85,7 @@ public class MainController {
     // TODO : 삭제 구현이 필요함, 좀 더 생각해봐야하는 부분
     @GetMapping("/match")
     @ResponseBody
-    public String match(@RequestBody UserMatchDto userMatchDto) {
+    public String match(@RequestBody UserMatchDto userMatchDto) throws InterruptedException {
 
         int mmr = userMatchDto.getMmr();
 
@@ -94,54 +94,25 @@ public class MainController {
 
         System.out.println("listName : " + listName);
 
-        // 해당 큐가 있는지 확인 할 필요없음, 리스트에서 이미 확인함
-        // Set<String> keys = redisTemplate.keys("map:"+listName);
-        
-        // else {
-        //     hashOperations.put("map:"+listName, userMatchDto.getUserId(), userMatchDto);
-        // }
-        // 뷰 단에 팀 정보 넘겨주기
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        // 맵이 없어서 새롭게 생성하는 경우
-        // HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        // Map<String, Object> map = new HashMap<>();
-
-        // map.put("firstName", "Gyunny");
-        // map.put("lastName", "Choi");
-        // map.put("gender", "Man");
-        // hashOperations.putAll("key", map);
-
-        // String firstName = (String) redisTemplate.opsForHash().get("key", "firstName");
-        // String lastName = (String) redisTemplate.opsForHash().get("key", "lastName");
-        // String gender = (String) redisTemplate.opsForHash().get("key", "gender");
-        // System.out.println(firstName);
-        // System.out.println(lastName);
-        // System.out.println(gender);
-
-        // // String listname = "queue";
-
-        // int time = 1;
-        // // GroupMatchDto groupMatchDto = new GroupMatchDto(listname, max, min, time);
-
-        // RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
-        // operations.opsForList().remove("QueueList", time, operations);
-        // redisTemplate.setValueSerializer(new StringRedisSerializer());
-
-        // List<Object> a = operations.opsForList().range("키이름", 0, operations.opsForList().size("QueueList")-1);
-
-        // // 리스트는 있고, 11명이 되려고 할때 1초 쓰레드 추가
-        // try {
-
-        //     for (int i = 0; i < a.size(); i++) {
-        //         UserMatchDto userMatchDto2 = objectMapper.readValue(a.get(i).toString(), UserMatchDto.class);
-        //         System.out.println("값 나와랏! : " + userMatchDto2.toString());
-        //     }
-
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        // }
+        // map size가 10보다 작을때는 계속 머무르기
+        if(hashOperations.size("map:"+listName) < 10) {
+            queueCheck(hashOperations.size("map:"+listName), listName);
+        }
 
         return "OK";
+    }
+
+        // 큐 사이즈 확인 10이면 재귀 메소드 탈출
+    private void queueCheck(Long size, String listName) throws InterruptedException {
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        if(size < 10) {
+            System.out.println("와서 뱅글뱅글 도는중 : "+size);
+            Thread.sleep(1000);
+            queueCheck(hashOperations.size("map:"+listName), listName);
+        } 
     }
 
     @GetMapping("/write")
@@ -205,7 +176,7 @@ public class MainController {
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
-    @GetMapping("/queueList/delete")
+    @GetMapping("/queue/delete")
     @ResponseBody
     public String queueListDelete(@RequestBody UserMatchDto userMatchDto) {
         // Set<String> keys = redisTemplate.keys("posts:*");
@@ -352,7 +323,6 @@ public class MainController {
     }
 
     // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
-    // TODO : 포지션 고려 넣어야함 : 완료
     private String isMap(int mmr, String rank, UserMatchDto userMatchDto) {
 
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
@@ -364,6 +334,7 @@ public class MainController {
 
         List<String> rankList = new ArrayList<>();
 
+        // 랭킹에 따른 배치
         if (rank.equals("Iron") || rank.equals("Bronze")) {
             rankList.add("Iron");
             rankList.add("Bronze");
@@ -448,10 +419,10 @@ public class MainController {
 
         }
 
-
         return queueName;
     }
 
+    // 큐 생성
     private void queueCreate(String queueName, UserMatchDto userMatchDto) {
         userMatchDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -459,6 +430,7 @@ public class MainController {
         hashOperations.put("map:"+queueName, userMatchDto.getUserId(), userMatchDto);
     }
 
+    // 포지션 확인
     private String positionCheck(List<String> positionList, UserMatchDto userMatchDto, int min, int max) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
