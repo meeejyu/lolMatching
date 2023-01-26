@@ -49,6 +49,8 @@ public class MainController {
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
+        hashOperations.put("queueAll", userMatchDto.getUserId(), listName);
+
         // map size가 10보다 작을때는 계속 머무르기
         if(hashOperations.size("map:"+listName) < 10) {
             String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto.getUserId());
@@ -57,7 +59,7 @@ public class MainController {
             }
         }
 
-        return "OK";
+        return listName;
     }
 
     // 큐 사이즈 확인 10이면 재귀 메소드 탈출
@@ -146,12 +148,19 @@ public class MainController {
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
     @GetMapping("/queue/delete")
     @ResponseBody
-    public String queueListDelete(@RequestBody UserMatchDto userMatchDto) {
-        // Set<String> keys = redisTemplate.keys("posts:*");
+    public String queueListDelete(@RequestBody UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException {
+
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        // redisTemplate.setValueSerializer(new StringRedisSerializer());
-        hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId());
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        Object object = hashOperations.get("queueAll", userMatchDto.getUserId());
+
+        System.out.println(object.toString());
+
+        hashOperations.delete("queueAll", userMatchDto.getUserId());
+
+        hashOperations.delete("map:"+object.toString(), userMatchDto.getUserId());
 
         return "ok";
     }
