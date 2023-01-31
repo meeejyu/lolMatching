@@ -16,6 +16,7 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -34,6 +35,19 @@ public class MainController {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private final ObjectMapper objectMapper;
+
+    @GetMapping("/main")
+    public String main() {
+        System.out.println("ㅎㅇ");
+        return "main";
+    }
+
+    @PostMapping("/test")
+    @ResponseBody
+    public String test(String a, String c) {
+        System.out.println("a : "+a +" c : "+c);
+        System.out.println("test");
+    }
 
     // TODO : 삭제 구현이 필요함, 좀 더 생각해봐야하는 부분
     @GetMapping("/match")

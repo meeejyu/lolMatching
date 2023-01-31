@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <html xmlns:th="http://www.thymeleaf.org" lang="en">
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>ㅎㅇ</h1>
+    <button onclick="test()">버튼</button>
+</body>
+<script type="text/javascript">
+
+    function test() {
+        var form = $('#frm').serialize();
+        $.ajax({
+            url: '/test',
+            type: 'post',
+            dataType:'json',
+            data: {"a":"b","c":"d"},
+            success: function (r) {
+                console(r);
+                alert("ㅎㅇ");
+                // if(r.fail!=null) {
+                //     alert(r.fail);
+                // }
+                // else {
+                //     $("#frm").attr("action", "/user2/main");
+                //     $("#frm").submit();
+                // }
+            },
+            fail : function(e) {
+                console(e);
+            }
+        });
+    }
+</script>
+</html>
