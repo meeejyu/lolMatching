@@ -7,36 +7,202 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>matching</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <style>
+        .container {
+            width: 700px;
+            height: 700px;
+            margin: 10px auto;
+            border: 1px solid red;
+            display: flex;
+            align-items: center;
+        }
+        .frm {
+            margin: 0 auto;
+        }
+        .title {
+            text-align : center
+        }
+        .content {
+            margin: 0 auto;
+            text-align : center;
+        }
+        .choice {
+            display: flex;
+            justify-content : center;
+            gap: 10px;
+            margin: 10px auto;
+        }
+        .match {
+            margin: 10px auto;
+        }
+        .waiting, .match_agree, .fail_other, .fail_me, .match_cancel, .matching, .time {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>ㅎㅇ</h1>
-    <button onclick="test()">버튼</button>
+    <div class="container">
+        <form class="frm" id="frm" name="frm">
+            <div class="title">
+                <h1>팀 매칭</h1>
+                <h2>회원 닉네임 : </h2>
+                <h2 th:text="${nickName}"></h2>
+            </div>
+            <div class="content">
+                <div class="choice">
+                    <button type="button" class="btn btn-info btn-lg" onclick="position(this)" value="support">support</button>
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="position(this)" value="top">top</button>
+                    <button type="button" class="btn btn-success btn-lg" onclick="position(this)" value="jungle">jungle</button>
+                    <button type="button" class="btn btn-dark btn-lg" onclick="position(this)" value="mid">mid</button>
+                    <button type="button" class="btn btn-warning btn-lg" onclick="position(this)" value="bottom">bottom</button>
+                </div>
+                <div class="match">
+                    <button type="button" class="btn btn-primary btn-lg matching" id="matching" onclick="matchStart()">매칭하기</button>
+                    <button type="button" class="btn btn-danger btn-lg match_cancel" id="match_cancel" onclick="matchCancel()">매칭취소하기</button>
+                </div>
+                
+                <div>
+                    <span class="waiting" id="waiting" display="none">상대를 찾는 중</span>
+                    <div class="match_agree" id="match_agree" display="none">
+                        <div>매칭이 완료 되었습니다. 아래의 수락 버튼을 눌러주세요</div>
+                        <button type="button" class="btn btn-outline-warning btn-lg" onclick="matchEnd()">매칭수락</button>
+                        <div class="fail_other" id="fail_other" display="none">수락하지 않은 유저로 인해 매칭에 실패했습니다</div>
+                        <div class="fail_me" id="fail_me" display="none">시간내에 수락하지 않았습니다. 5분동안 매칭하지 못합니다</div>
+                        <!-- <p class="time" id="time">
+                            <label for="Timer">남은 시간:</label>
+                            <input id="Timer" type="text" value="" readonly/>
+                        </p> -->
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
 </body>
 <script type="text/javascript">
 
-    function test() {
-        var form = $('#frm').serialize();
-        $.ajax({
-            url: '/test',
-            type: 'post',
-            dataType:'json',
-            data: {"a":"b","c":"d"},
-            success: function (r) {
-                console(r);
-                alert("ㅎㅇ");
-                // if(r.fail!=null) {
-                //     alert(r.fail);
-                // }
-                // else {
-                //     $("#frm").attr("action", "/user2/main");
-                //     $("#frm").submit();
-                // }
-            },
-            fail : function(e) {
-                console(e);
-            }
-        });
+    // 원하는 포지션
+    var choice = "";
+    // 매칭된 팀
+    var listName = "";
+
+    const Timer=document.getElementById('Timer'); //스코어 기록창-분
+    let time= 300000;
+    let min=5;
+    let sec=60;
+
+
+    Timer.value=min+":"+'00'; 
+
+    function position(arg) {
+        choice = $(arg).val();
+        $('#matching').show();
+        console.log(choice);
+    }
+
+    // 매칭 중도 취소
+    function matchCancel() {
+        if($('#waiting').css('display')!='none') {
+            $.ajax({
+                url: '/queue/delete',
+                type: 'get',
+                dataType:'json',
+                // 데이터 보내는거 좀 더 고민해보기
+                data: {"position":choice},
+                success: function(r) {
+                    console.log(r);
+                    if(r.code="success") {
+                        console.log(r.code);
+                        $('#waiting').hide();
+                        $('#match_cancel').hide();
+                    }
+                    else {
+                        console.log(r.code);
+                    }
+                },
+                error : function(e) {
+                    console.log(e);
+                }
+            });
+        }
+    }
+
+    // 포지션 선택 후 매칭 시작
+    function matchStart() {
+        console.log(choice);
+        if(choice!="" && (choice=="support" || choice=="top" || choice=="jungle" || choice=="mid" || choice=="bottom")) {
+            console.log("성공 : "+choice);
+            $('#time').show();
+            // TIMER();
+            // var form = $('#frm').serialize();
+            $.ajax({
+                url: '/match',
+                type: 'post',
+                dataType:'json',
+                // 데이터 보내는거 좀 더 고민해보기
+                data: {"position":choice},
+                success: function(r) {
+                    console.log(r);
+                    if(r.code="success") {
+                        console.log(r.code);
+                        console.log(r.listName);
+                        $('#waiting').hide();
+                        $('#match_cancel').hide();
+                        $('#match_agree').show();
+                    }
+                    else {
+                        console.log(r.code);
+                        $('#waiting').hide();
+                        $('#match_cancel').hide();
+                        alert("매칭에 실패했습니다. 다시 시도해주세요");
+                        // $("#frm").attr("action", "/user2/main");
+                        // $("#frm").submit();
+                    }
+                },
+                error : function(e) {
+                    console.log(e);
+                    $('#waiting').hide();
+                    $('#match_cancel').hide();
+                    alert("매칭에 실패했습니다. 다시 시도해주세요");
+                }
+            });
+        }
+        else {
+            console.log("실패 : "+choice);
+        }
+        
+    }
+
+    // function TIMER(){
+    //     PlAYTIME=setInterval(function(){
+    //         time=time-1000; //1초씩 줄어듦
+    //         min=time/(60*1000); //초를 분으로 나눠준다.
+
+    //     if(sec>0){ //sec=60 에서 1씩 빼서 출력해준다.
+    //             sec=sec-1;
+    //             Timer.value=Math.floor(min)+':'+sec; //실수로 계산되기 때문에 소숫점 아래를 버리고 출력해준다.
+            
+    //         }
+    //         if(sec===0){
+    //             // 0에서 -1을 하면 -59가 출력된다.
+    //             // 그래서 0이 되면 바로 sec을 60으로 돌려주고 value에는 0을 출력하도록 해준다.
+    //             sec=60;
+    //             Timer.value=Math.floor(min)+':'+'00'
+    //         }     
+    
+    //     },1000); //1초마다 
+    // }
+
+    // setTimeout(function(){
+    //     clearInterval(PlAYTIME);
+    // },300000);//5분이 되면 타이머를 삭제한다.
+
+    // 매칭 완료후 로직
+    function matchEnd() {
+        // 팀 보여주는 페이지로 이동
+        // 누군가 취소해서 실패하면, 실패했다고 알려주고 다시 빨리 매칭 잡아주기
+        // 로딩화면 다시 띄우기
     }
 </script>
 </html>
