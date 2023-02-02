@@ -3,10 +3,12 @@ package com.lol.match.domain.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 @ToString
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserMatchDto {
@@ -36,4 +38,15 @@ public class UserMatchDto {
     public void queueNameSet(String queueName) {
         this.queueName = queueName;
     }
+
+    public UserMatchDto(String userId, int mmr, String userNickname, String rank) {
+        this.userId = userId;
+        this.mmr = mmr;
+        this.userNickname = userNickname;
+        this.rank = rank;
+    }
+
+
+    
+    
 }

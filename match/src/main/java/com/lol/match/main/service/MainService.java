@@ -32,7 +32,7 @@ public class MainService {
 
     private final ObjectMapper objectMapper;
  
-    public HashMap<String, String> match(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException {
+    public HashMap<String, String> match(UserMatchDto userMatchDto) throws Exception {
         
         HashMap<String, String> result = new HashMap<>();
         int mmr = userMatchDto.getMmr();
@@ -49,17 +49,25 @@ public class MainService {
         hashOperations.put("queueAll", userMatchDto.getUserId(), listName);
 
         // map size가 10보다 작을때는 계속 머무르기
-        // if(hashOperations.size("map:"+listName) < 10) {
-        //     String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto.getUserId());
-        //     if(status.equals("cancel")) {
-        //         result.put("code", "cancel");
-        //         return result;
-        //     }
-        // }
+        if(hashOperations.size("map:"+listName) < 10) {
+            String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto.getUserId());
+            if(status.equals("cancel")) {
+                result.put("code", "cancel");
+                return result;
+            }
+        }
+        Object keyCheck = hashOperations.get("queueAll", userMatchDto.getUserId());
 
-        result.put("code", "success");
-        result.put("listname", listName);
-        return result;
+        if(keyCheck==null) {
+            result.put("code", "cancel");
+            return result;
+        }
+        else {
+            result.put("code", "success");
+            result.put("listname", listName);
+            return result;
+        }
+        
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
@@ -227,7 +235,7 @@ public class MainService {
     }
 
     // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
-    private String isMap(int mmr, String rank, UserMatchDto userMatchDto) {
+    private String isMap(int mmr, String rank, UserMatchDto userMatchDto) throws Exception {
 
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
         redisTemplate.setValueSerializer(new StringRedisSerializer());
@@ -273,6 +281,9 @@ public class MainService {
             rankList.add("GrandMaster");
         } else if (rank.equals("Challenger")) {
             rankList.add("Challenger");
+        }
+        else {
+            throw new Exception("잘못된 요청입니다");
         }
 
         // Redis Data List 출력

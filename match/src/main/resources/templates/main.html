@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <html xmlns:th="http://www.thymeleaf.org" lang="en">
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>matching</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <html xmlns:th="http://www.thymeleaf.org" lang="en">
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <title>matching</title>
     <style>
         .container {
             width: 700px;
@@ -48,15 +48,19 @@
             <div class="title">
                 <h1>팀 매칭</h1>
                 <h2>회원 닉네임 : </h2>
-                <h2 th:text="${nickName}"></h2>
+                <h2 th:text="${userMatchDto.userNickname}"></h2>
+                <input type="text" id="userId" name="userId" th:value="${userMatchDto.userId}" hidden>
+                <input type="text" id="mmr" name="mmr" th:value="${userMatchDto.mmr}" hidden>
+                <input type="text" id="rank" name="rank" th:value="${userMatchDto.rank}" hidden>
+                <input type="text" id="position" name="position" hidden>
             </div>
             <div class="content">
                 <div class="choice">
-                    <button type="button" class="btn btn-info btn-lg" onclick="position(this)" value="support">support</button>
-                    <button type="button" class="btn btn-secondary btn-lg" onclick="position(this)" value="top">top</button>
-                    <button type="button" class="btn btn-success btn-lg" onclick="position(this)" value="jungle">jungle</button>
-                    <button type="button" class="btn btn-dark btn-lg" onclick="position(this)" value="mid">mid</button>
-                    <button type="button" class="btn btn-warning btn-lg" onclick="position(this)" value="bottom">bottom</button>
+                    <button type="button" class="btn btn-info btn-lg" onclick="position_choice(this)" value="support">support</button>
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="position_choice(this)" value="top">top</button>
+                    <button type="button" class="btn btn-success btn-lg" onclick="poposition_choicesition(this)" value="jungle">jungle</button>
+                    <button type="button" class="btn btn-dark btn-lg" onclick="position_choice(this)" value="mid">mid</button>
+                    <button type="button" class="btn btn-warning btn-lg" onclick="position_choice(this)" value="bottom">bottom</button>
                 </div>
                 <div class="match">
                     <button type="button" class="btn btn-primary btn-lg matching" id="matching" onclick="matchStart()">매칭하기</button>
@@ -95,21 +99,23 @@
 
     Timer.value=min+":"+'00'; 
 
-    function position(arg) {
+    function position_choice(arg) {
         choice = $(arg).val();
         $('#matching').show();
         console.log(choice);
+        $('#position').attr('value', $(arg).val());
     }
 
     // 매칭 중도 취소
     function matchCancel() {
         if($('#waiting').css('display')!='none') {
+            var form = $('#frm').serialize();
             $.ajax({
                 url: '/queue/delete',
-                type: 'get',
+                type: 'post',
                 dataType:'json',
                 // 데이터 보내는거 좀 더 고민해보기
-                data: {"position":choice},
+                data: form,
                 success: function(r) {
                     console.log(r);
                     if(r.code="success") {
@@ -133,29 +139,38 @@
         console.log(choice);
         if(choice!="" && (choice=="support" || choice=="top" || choice=="jungle" || choice=="mid" || choice=="bottom")) {
             console.log("성공 : "+choice);
-            $('#time').show();
+            // $('#time').show();
             // TIMER();
-            // var form = $('#frm').serialize();
+            $('#waiting').show();
+            $('#match_cancel').show();
+            $('#matching').hide();
+            var form = $('#frm').serialize();
             $.ajax({
                 url: '/match',
                 type: 'post',
                 dataType:'json',
                 // 데이터 보내는거 좀 더 고민해보기
-                data: {"position":choice},
+                // data: {"position":choice},
+                data: form,
                 success: function(r) {
-                    console.log(r);
-                    if(r.code="success") {
-                        console.log(r.code);
+                    if(r.code=="success") {
+                        console.log("성공에 왔다"+r.code);
                         console.log(r.listName);
                         $('#waiting').hide();
                         $('#match_cancel').hide();
                         $('#match_agree').show();
                     }
                     else {
-                        console.log(r.code);
+                        console.log("실패에 왔다"+r.code);
                         $('#waiting').hide();
                         $('#match_cancel').hide();
-                        alert("매칭에 실패했습니다. 다시 시도해주세요");
+                        $('#matching').show();
+                        if(r.code="cancel") {
+                            alert("매칭을 취소했습니다");
+                        }
+                        else {
+                            alert("매칭에 실패했습니다. 다시 시도해주세요");
+                        }
                         // $("#frm").attr("action", "/user2/main");
                         // $("#frm").submit();
                     }
@@ -164,6 +179,7 @@
                     console.log(e);
                     $('#waiting').hide();
                     $('#match_cancel').hide();
+                    $('#matching').show();
                     alert("매칭에 실패했습니다. 다시 시도해주세요");
                 }
             });

@@ -1,19 +1,11 @@
 package com.lol.match.main.controller;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -41,16 +33,24 @@ public class MainController {
 
     private final ObjectMapper objectMapper;
 
-    @GetMapping("/main")
-    public String main(String nickName, Model model) {
-        System.out.println("닉네임 : "+ nickName);
-        model.addAttribute("nickName", nickName);
+    @GetMapping("/test")
+    public String test() {
+
+        return "test";
+    }
+
+    @PostMapping("/main")
+    public String main(UserMatchDto userMatchDto, Model model) {
+
+        System.out.println("회원정보 : "+ userMatchDto.toString());
+        model.addAttribute("userMatchDto", userMatchDto);
+
         return "main";
     }
 
     @PostMapping("/match")
     @ResponseBody
-    public HashMap<String, String> match(@RequestBody UserMatchDto userMatchDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
+    public HashMap<String, String> match(UserMatchDto userMatchDto) throws Exception {
 
         HashMap<String, String> result = mainService.match(userMatchDto);
 
@@ -58,9 +58,9 @@ public class MainController {
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
-    @GetMapping("/queue/delete")
+    @PostMapping("/queue/delete")
     @ResponseBody
-    public HashMap<String, String> queueListDelete(@RequestBody UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException {
+    public HashMap<String, String> queueListDelete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException {
 
         HashMap<String, String> result = mainService.queueListDelete(userMatchDto);
 
