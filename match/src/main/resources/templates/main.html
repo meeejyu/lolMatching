@@ -74,10 +74,10 @@
                         <button type="button" class="btn btn-outline-warning btn-lg" onclick="matchEnd()">매칭수락</button>
                         <div class="fail_other" id="fail_other" display="none">수락하지 않은 유저로 인해 매칭에 실패했습니다</div>
                         <div class="fail_me" id="fail_me" display="none">시간내에 수락하지 않았습니다. 5분동안 매칭하지 못합니다</div>
-                        <!-- <p class="time" id="time">
+                        <p class="time" id="time">
                             <label for="Timer">남은 시간:</label>
                             <input id="Timer" type="text" value="" readonly/>
-                        </p> -->
+                        </p>
                     </div>
                 </div>
             </div>
@@ -92,12 +92,13 @@
     var listName = "";
 
     const Timer=document.getElementById('Timer'); //스코어 기록창-분
-    let time= 300000;
-    let min=5;
-    let sec=60;
+    let time= 10000;
+    // let min=0;
+    let sec=10;
 
+    // Timer.value=min+":"+'00'; 
+    Timer.value='10'; 
 
-    Timer.value=min+":"+'00'; 
 
     function position_choice(arg) {
         choice = $(arg).val();
@@ -190,32 +191,72 @@
         
     }
 
-    // function TIMER(){
-    //     PlAYTIME=setInterval(function(){
-    //         time=time-1000; //1초씩 줄어듦
-    //         min=time/(60*1000); //초를 분으로 나눠준다.
-
-    //     if(sec>0){ //sec=60 에서 1씩 빼서 출력해준다.
-    //             sec=sec-1;
-    //             Timer.value=Math.floor(min)+':'+sec; //실수로 계산되기 때문에 소숫점 아래를 버리고 출력해준다.
+    function TIMER(){
+        PlAYTIME=setInterval(function(){
+            time=time-1000; //1초씩 줄어듦
+            // min=time/(60*1000); //초를 분으로 나눠준다.
+            Timer.value=sec;
+        // if(sec>0){ //sec=60 에서 1씩 빼서 출력해준다.
+        //         sec=sec-1;
+        //         Timer.value=Math.floor(min)+':'+sec; //실수로 계산되기 때문에 소숫점 아래를 버리고 출력해준다.
             
-    //         }
-    //         if(sec===0){
-    //             // 0에서 -1을 하면 -59가 출력된다.
-    //             // 그래서 0이 되면 바로 sec을 60으로 돌려주고 value에는 0을 출력하도록 해준다.
-    //             sec=60;
-    //             Timer.value=Math.floor(min)+':'+'00'
-    //         }     
+        //     }
+        //     if(sec===0){
+        //         // 0에서 -1을 하면 -59가 출력된다.
+        //         // 그래서 0이 되면 바로 sec을 60으로 돌려주고 value에는 0을 출력하도록 해준다.
+        //         sec=60;
+        //         Timer.value=Math.floor(min)+':'+'00'
+        //     }     
     
-    //     },1000); //1초마다 
-    // }
+        },1000); //1초마다 
+    }
 
-    // setTimeout(function(){
-    //     clearInterval(PlAYTIME);
-    // },300000);//5분이 되면 타이머를 삭제한다.
+    setTimeout(function(){
+        clearInterval(PlAYTIME);
+    },10000);//5분이 되면 타이머를 삭제한다.
 
     // 매칭 완료후 로직
     function matchEnd() {
+        var form = $('#frm').serialize();
+        $.ajax({
+            url: '/match/complete',
+            type: 'post',
+            dataType:'json',
+            // 데이터 보내는거 좀 더 고민해보기
+            // data: {"position":choice},
+            data: form,
+            success: function(r) {
+                if(r.code=="success") {
+                    console.log("성공에 왔다"+r.code);
+                    console.log(r.listName);
+                    $('#waiting').hide();
+                    $('#match_cancel').hide();
+                    $('#match_agree').show();
+                }
+                else {
+                    console.log("실패에 왔다"+r.code);
+                    $('#waiting').hide();
+                    $('#match_cancel').hide();
+                    $('#matching').show();
+                    if(r.code="cancel") {
+                        alert("매칭을 취소했습니다");
+                    }
+                    else {
+                        alert("매칭에 실패했습니다. 다시 시도해주세요");
+                    }
+                    // $("#frm").attr("action", "/user2/main");
+                    // $("#frm").submit();
+                }
+            },
+            error : function(e) {
+                console.log(e);
+                $('#waiting').hide();
+                $('#match_cancel').hide();
+                $('#matching').show();
+                alert("매칭에 실패했습니다. 다시 시도해주세요");
+            }
+        });
+
         // 팀 보여주는 페이지로 이동
         // 누군가 취소해서 실패하면, 실패했다고 알려주고 다시 빨리 매칭 잡아주기
         // 로딩화면 다시 띄우기

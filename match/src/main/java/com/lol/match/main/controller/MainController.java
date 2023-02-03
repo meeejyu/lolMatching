@@ -1,5 +1,8 @@
 package com.lol.match.main.controller;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -17,7 +20,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lol.match.domain.dto.GroupMatchDto;
 import com.lol.match.domain.dto.UserMatchDto;
 import com.lol.match.main.service.MainService;
 
@@ -33,11 +35,6 @@ public class MainController {
 
     private final ObjectMapper objectMapper;
 
-    @GetMapping("/test")
-    public String test() {
-
-        return "test";
-    }
 
     @PostMapping("/main")
     public String main(UserMatchDto userMatchDto, Model model) {
@@ -68,24 +65,36 @@ public class MainController {
     }
 
     // 대전 매칭 완료하기 
-    @GetMapping("/queueList/find")
+    @PostMapping("/match/accept")
     @ResponseBody
-    public String queueListFind(@RequestBody UserMatchDto userMatchDto) {
+    public HashMap<String, String> matchAccept(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
-        String result = mainService.queueListFind(userMatchDto);
+        HashMap<String, String> result = mainService.matchAccept(userMatchDto);
         
         return result;
     }
 
-    // 대전 매칭 수락후 완료하기, 수락하기를 안누른 유저가 있으면 다시 대기열로 돌아가 queueList7에 첫번째로 넣어줌, 진행중
-    @GetMapping("/queueList/accept")
+    // 대전 매칭 완료 후 팀갈라서 각자 팀 보여주기
+    @PostMapping("/match/complete")
     @ResponseBody
-    public String queueListAccept(@RequestBody UserMatchDto userMatchDto) {
+    public String matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
-        String result = mainService.queueListAccept(userMatchDto);
+        HashMap<String, String> result = mainService.matchComplete(userMatchDto);
         
-        return result;
+        return "matchSuccess";
     }
+
+
+
+    // 대전 매칭 수락후 완료하기, 수락하기를 안누른 유저가 있으면 다시 대기열로 돌아가 queueList7에 첫번째로 넣어줌, 진행중
+    // @GetMapping("/queueList/accept")
+    // @ResponseBody
+    // public String queueListAccept(@RequestBody UserMatchDto userMatchDto) {
+        
+    //     String result = mainService.queueListAccept(userMatchDto);
+        
+    //     return result;
+    // }
 
 
 
@@ -138,36 +147,75 @@ public class MainController {
 
         String listname = userMatchDto.getRank() + "_" + min + "_" + max;
 
-        // String listname = "queue";
+        // // String listname = "queue";
 
-        int time = 1;
-        GroupMatchDto groupMatchDto = new GroupMatchDto(listname, max, min, time);
+        // int time = 1;
+        // GroupMatchDto groupMatchDto = new GroupMatchDto(listname, max, min, time);
 
-        redisTemplate.opsForList().leftPush(listname, userMatchDto);
-        redisTemplate.opsForList().leftPush("queue", groupMatchDto);
+        // redisTemplate.opsForList().leftPush(listname, userMatchDto);
+        // redisTemplate.opsForList().leftPush("queue", groupMatchDto);
 
-        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+        // RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
 
-        List<Object> a = operations.opsForList().range(listname, 0, 9);
+        // List<Object> a = operations.opsForList().range(listname, 0, 9);
 
-        // 리스트는 있고, 11명이 되려고 할때 1초 쓰레드 추가
-        try {
+        // // 리스트는 있고, 11명이 되려고 할때 1초 쓰레드 추가
+        // try {
 
-            for (int i = 0; i < a.size(); i++) {
-                UserMatchDto userMatchDto2 = objectMapper.readValue(a.get(0).toString(), UserMatchDto.class);
-                System.out.println("값 나와랏! : " + userMatchDto2.toString());
-            }
+        //     for (int i = 0; i < a.size(); i++) {
+        //         UserMatchDto userMatchDto2 = objectMapper.readValue(a.get(0).toString(), UserMatchDto.class);
+        //         System.out.println("값 나와랏! : " + userMatchDto2.toString());
+        //     }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        // }
         return "OK";
     }
 
     @GetMapping("/key")
     @ResponseBody
-    public String key() {
-        // isMap(0, "");
+    public String key() throws ParseException {
+        
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        
+        // redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+        
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        List<Object> list = hashOperations.values("map:Gold_520_620_f7fe6169-8f2c-4491-b0c6-6a8079e790f2");
+
+        System.out.println(list.toString());
+
+        return "ok";
+    }
+
+    @GetMapping("/test")
+    @ResponseBody
+    public String test(String listName) throws ParseException, InterruptedException {
+        
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+
+        Date date = new Date();
+        System.out.println("date : "+date);
+
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        Object object = hashOperations.get("acceptTime", listName);
+
+        Date saveDate = simpleDateFormat.parse(object.toString());
+        
+        while(saveDate.after(date)) {
+            
+            Thread.sleep(1000);
+            Date newDate = new Date();
+            System.out.println("결과 : "+saveDate.after(newDate));
+            if(saveDate.after(newDate)==false) {
+                break;
+            }
+        }
 
         return "ok";
     }

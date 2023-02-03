@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -23,8 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lol.match.domain.dto.UserMatchDto;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class MainService {
 
@@ -36,6 +39,7 @@ public class MainService {
         
         HashMap<String, String> result = new HashMap<>();
         int mmr = userMatchDto.getMmr();
+        boolean condition = true;
 
         // TODO : 해쉬맵이 있는지 체크하는 메소드 추가 필요, 맵값
         String listName = isMap(mmr, userMatchDto.getRank(), userMatchDto);
@@ -50,24 +54,40 @@ public class MainService {
 
         // map size가 10보다 작을때는 계속 머무르기
         if(hashOperations.size("map:"+listName) < 10) {
+            condition = false;
             String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto.getUserId());
             if(status.equals("cancel")) {
                 result.put("code", "cancel");
                 return result;
             }
         }
-        Object keyCheck = hashOperations.get("queueAll", userMatchDto.getUserId());
-
-        if(keyCheck==null) {
-            result.put("code", "cancel");
-            return result;
-        }
         else {
             result.put("code", "success");
-            result.put("listname", listName);
-            return result;
+            result.put("listname", listName);    
         }
+        if(condition) {
+            acceptTime(listName);
+        }
+        return result;
+    }
+
+    // 동의 시간 저장
+    private void acceptTime(String listName) throws ParseException {
         
+        Date date = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+        Calendar cal = Calendar.getInstance();
+        System.out.println("date : "+date);
+        cal.setTime(date);
+        cal.add(Calendar.SECOND, 10);
+        System.out.println("date+10 : "+cal.getTime());
+        String saveTime = simpleDateFormat.format(cal.getTime());
+        System.out.println("saveTime : "+saveTime);
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        hashOperations.put("acceptTime", listName, saveTime);
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
@@ -96,122 +116,87 @@ public class MainService {
             hashOperations.delete("position:"+key.toString(), userMatchDto.getPosition());
         }
         else if(Integer.parseInt(position.toString())==2) {
-            hashOperations.put("position:"+key.toString(), position, 1);
+            redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+            hashOperations.put("position:"+key.toString(), userMatchDto.getPosition(), 1);
         }
-
+    
         result.put("code", "success");
 
         return result;
     }
     
     // 대전 매칭 완료하기 
-    public String queueListFind(UserMatchDto userMatchDto) {
+    public HashMap<String, String> matchAccept(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
-        boolean condition = true;
+        // TODO : 시간 추가, 재귀 메소드 수정 -> 추가
+        HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
+        String listName = userMatchDto.getQueueName();
         // 계속 돌기
-        try {
-            while(condition) {
-                if(hashOperations.get("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId())==null) {
-                    System.out.println("본인이 대전을 찾는 와중에 취소한 경우");
-                    queueCancle(userMatchDto, hashOperations);
-                    return "fail";
-                }
-                else {
-                    queueChange(userMatchDto);
-                    if(hashOperations.size("map:"+userMatchDto.getQueueName()) == Long.valueOf(10)) {
-                        condition = false;
-                    }
-                }
-                System.out.println("큐 사이즈 확인 : " + hashOperations.size("map:"+userMatchDto.getQueueName()));
+        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId())==false) {
+            log.info("잘못된 요청입니다.");
+            result.put("code", "fail");
+            return result;
+        }
+        else {
+            redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+            hashOperations.put("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId(), userMatchDto);
+            
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+
+            Date date = new Date();
+            System.out.println("date : "+date);
+    
+            redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+    
+            Object object = hashOperations.get("acceptTime", listName);
+    
+            Date saveDate = simpleDateFormat.parse(object.toString());
+            
+            while(saveDate.after(date)) {
+                
                 Thread.sleep(1000);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.out.println("이건 최종 큐 사이즈 : "+ hashOperations.size("map:"+userMatchDto.getQueueName()));
-        System.out.println("매칭 완료");
-        // 뷰단에 팀 정보를 넘겨줘야함
-        
-        return "ok";
-    }
-
-    // 대전 매칭 수락후 완료하기, 수락하기를 안누른 유저가 있으면 다시 대기열로 돌아가 queueList7에 첫번째로 넣어줌, 진행중
-    public String queueListAccept(UserMatchDto userMatchDto) {
-        
-        boolean condition = true;
-        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
-
-        // 계속 돌기s
-        try {
-            while(condition) {
-                if(hashOperations.get("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId())==null) {
-                    System.out.println("본인이 대전을 찾는 와중에 취소한 경우");
-                    return "fail";
+                Date newDate = new Date();
+                System.out.println("결과 : "+saveDate.after(newDate));
+                
+                // 10초가 지날때까지 사이즈 검토
+                if(saveDate.after(newDate)==false) {
+                    break;
                 }
-                else {
-                    if(hashOperations.size("map:"+userMatchDto.getQueueName()) == Long.valueOf(10)) {
-
-                        condition = false;
-                    }
+                // 10초가 안지났지만 사이즈가 10되면 미리 바로 탈출
+                if(hashOperations.size("accept:"+userMatchDto.getQueueName())==10) {
+                    result.put("code", "success");
+                    result.put("listname", listName);
+                    return result;
                 }
-                // System.out.println("큐 사이즈 확인 : " + hashOperations.size("map:"+userMatchDto.getQueueName()));
-                Thread.sleep(1000);
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            // 한번 더 사이즈 검토
+            if(hashOperations.size("accept:"+userMatchDto.getQueueName())==10) {
+                result.put("code", "success");
+                result.put("listname", listName);
+            }
+            else {
+                result.put("code", "fail");
+            }
+            return result;
         }
-        // TODO : 나중에 필요할수도 있음
-        // redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
-        System.out.println("이건 최종 큐 사이즈 : "+ hashOperations.size("map:"+userMatchDto.getQueueName()));
-        System.out.println("매칭 완료");
-        // 뷰단에 팀 정보를 넘겨줘야함
+    }
+
+    // 팀 가르고 팀 정보 저장하기
+    public HashMap<String, String> matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
-        return "ok";
-    }
-
-    // 대전 찾기 중 실패
-    private void queueCancle(UserMatchDto userMatchDto, HashOperations<String, Object, Object> hashOperations) {
-        hashOperations.put("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition(), 
-        Integer.parseInt(hashOperations.get("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition()).toString())-1);
-            hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId());
-    }
-
-    private void queueChange(UserMatchDto userMatchDto) {
+        HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
-
-        LocalDateTime time = LocalDateTime.now();
-
-        String nowTime = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        String queueName = "";
-        System.out.println("시간 : " + nowTime);
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        try {
-            Date nowDate = sdf.parse(nowTime);
-            Date originalDate = sdf.parse(userMatchDto.getQueueName().split("_")[3]);
-
-            if(nowDate.after(originalDate)) {
-                System.out.println("리스트 및 hashMap 변경");
-                // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
-                String[] queueList = userMatchDto.getQueueName().split("_");
-                int min = Integer.parseInt(queueList[1]) > 150 ? Integer.parseInt(queueList[1]) - 5 : 100;
-                int max = Integer.parseInt(queueList[1]) + 5;
-                String uuid = UUID.randomUUID().toString();
-                queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+"시간"+"_"+uuid;
-            }
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
+        
+        hashOperations.values("accept");
+        return result;
     }
 
-    // 큐 사이즈 확인 10이면 재귀 메소드 탈출
+
+
+    // 매칭 진행 : 큐 사이즈 확인 10이면 재귀 메소드 탈출
     private String queueCheck(Long size, String listName, String id) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
@@ -394,6 +379,64 @@ public class MainService {
         }
 
         return queueName;
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // 대전 찾기 중 실패
+    private void queueCancle(UserMatchDto userMatchDto, HashOperations<String, Object, Object> hashOperations) {
+        hashOperations.put("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition(), 
+        Integer.parseInt(hashOperations.get("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition()).toString())-1);
+            hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId());
+    }
+
+    private void queueChange(UserMatchDto userMatchDto) {
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+
+        LocalDateTime time = LocalDateTime.now();
+
+        String nowTime = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String queueName = "";
+        System.out.println("시간 : " + nowTime);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            Date nowDate = sdf.parse(nowTime);
+            Date originalDate = sdf.parse(userMatchDto.getQueueName().split("_")[3]);
+
+            if(nowDate.after(originalDate)) {
+                System.out.println("리스트 및 hashMap 변경");
+                // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
+                String[] queueList = userMatchDto.getQueueName().split("_");
+                int min = Integer.parseInt(queueList[1]) > 150 ? Integer.parseInt(queueList[1]) - 5 : 100;
+                int max = Integer.parseInt(queueList[1]) + 5;
+                String uuid = UUID.randomUUID().toString();
+                queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+"시간"+"_"+uuid;
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
     }
 }

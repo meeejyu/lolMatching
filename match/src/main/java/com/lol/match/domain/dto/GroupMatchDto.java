@@ -13,10 +13,12 @@ public class GroupMatchDto {
 
     private String groupName;
 
-    private int max;
+    private String userId;
 
-    private int min;
+    private int mmr;
 
-    private int time;
+    private String userNickname;
+
+    private String position;
 
 }
