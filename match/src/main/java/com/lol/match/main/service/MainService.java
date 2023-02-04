@@ -9,6 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.redis.core.HashOperations;
@@ -121,6 +122,7 @@ public class MainService {
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String user = objectMapper.writeValueAsString(userMatchDto);
+        boolean condition = true;
 
         String listName = userMatchDto.getQueueName();
         // 계속 돌기
@@ -151,6 +153,10 @@ public class MainService {
                 if(saveDate.after(newDate)==false) {
                     break;
                 }
+                if(hashOperations.size("accept:"+userMatchDto.getQueueName())<10) {
+                    condition = false;
+                    continue;
+                }
                 // 10초가 안지났지만 사이즈가 10되면 미리 바로 탈출
                 if(hashOperations.size("accept:"+userMatchDto.getQueueName())==10) {
                     result.put("code", "success");
@@ -162,6 +168,9 @@ public class MainService {
             if(hashOperations.size("accept:"+userMatchDto.getQueueName())==10) {
                 result.put("code", "success");
                 result.put("listname", listName);
+                if(condition) {
+                    teamDivide(listName);
+                }
             }
             else {
                 result.put("code", "fail");
@@ -171,11 +180,160 @@ public class MainService {
 
     }
 
+    private void teamDivide(String listName) throws JsonMappingException, JsonProcessingException {
+        // 키 값 돌려서 포지션 알아내서 비교하기
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        Map<Object, Object> map = hashOperations.entries("accept:"+listName);
+
+        Map<Object, Integer> topMap = new HashMap<>();
+        List<Object> topList = new ArrayList<>();
+
+        Map<Object, Integer> junglepMap = new HashMap<>();
+        List<Object> jungleList = new ArrayList<>();
+
+        Map<Object, Integer> midMap = new HashMap<>();
+        List<Object> midList = new ArrayList<>();
+
+        Map<Object, Integer> bottomMap = new HashMap<>();
+        List<Object> bottomList = new ArrayList<>();
+
+        Map<Object, Integer> supportMap = new HashMap<>();
+        List<Object> supportList = new ArrayList<>();
+
+        Map<Integer, List<String>> teamCom = new HashMap<>();        
+
+        // postion이랑 mmr 얻어와서 비교하기
+        for(Object key : map.keySet() ){
+            UserMatchDto user = objectMapper.readValue(map.get(key).toString(), UserMatchDto.class);
+            if(key.toString().contains("top")) {
+                topMap.put(key, user.getMmr());
+                topList.add(key);
+            }
+            else if(key.toString().contains("support")) {
+                supportMap.put(key, user.getMmr());
+                supportList.add(key);
+            }
+            else if(key.toString().contains("mid")) {
+                midMap.put(key, user.getMmr());
+                midList.add(key);
+            }
+            else if(key.toString().contains("jungle")) {
+                junglepMap.put(key, user.getMmr());
+                jungleList.add(key);
+            }
+            else if(key.toString().contains("bottom")) {
+                bottomMap.put(key, user.getMmr());
+                bottomList.add(key);
+            }
+        }
+
+        for (int i = 0; i < topMap.size(); i++) {
+            int topA = topMap.get(topList.get(i));
+            for (int j = 0; j < supportMap.size(); j++) {
+                int supportA = supportMap.get(supportList.get(j));    
+                for (int q = 0; q < midMap.size(); q++) {
+                    int midA = midMap.get(midList.get(q));    
+                    for (int e = 0; e < junglepMap.size(); e++) {
+                        int jungleA = junglepMap.get(jungleList.get(e));    
+                        for (int r = 0; r < bottomMap.size(); r++) {
+                            int bottomA = bottomMap.get(bottomList.get(r)); 
+                            int sumA = topA + supportA + midA + jungleA + bottomA;
+                            int topB = 0;
+                            int supportB = 0;
+                            int midB = 0;
+                            int jungleB = 0;
+                            int bottomB = 0;
+                            String aList = topList.get(i)+"/"+supportList.get(j)+"/"+midList.get(q)+"/"+jungleList.get(e)+"/"+bottomList.get(r);
+                            
+                            // 팀 B의 리스트 설정, 팀 A와 반대되는 유저 추가
+                            String bList = "";
+                            if(i==0) {
+                                topB = topMap.get(topList.get(1));
+                                bList += topList.get(1);
+                            }
+                            else if(i==1) {
+                                topB = topMap.get(topList.get(0));
+                                bList += topList.get(0);
+                            }
+                            if(j==0) {
+                                supportB = supportMap.get(supportList.get(1)); 
+                                bList += "/"+supportList.get(1);
+                            }
+                            else if(j==1) {
+                                supportB = supportMap.get(supportList.get(0)); 
+                                bList += "/"+supportList.get(0);
+                            }
+                            if(q==0) {
+                                midB = midMap.get(midList.get(1)); 
+                                bList += "/"+midList.get(1);
+                            }
+                            else if(q==1) {
+                                midB = midMap.get(midList.get(0)); 
+                                bList += "/"+midList.get(0);
+                            }
+                            if(e==0) {
+                                jungleB = junglepMap.get(jungleList.get(1));  
+                                bList += "/"+jungleList.get(1);
+                            }
+                            else if(e==1) {
+                                jungleB = junglepMap.get(jungleList.get(0));  
+                                bList += "/"+jungleList.get(0);
+                            }
+                            if(r==0) {
+                                bottomB = bottomMap.get(bottomList.get(1)); 
+                                bList += "/"+bottomList.get(1);
+                            }
+                            else if(r==1) {
+                                bottomB = bottomMap.get(bottomList.get(0)); 
+                                bList += "/"+bottomList.get(0);
+                            }
+                            int sumB = topB + supportB + midB + jungleB + bottomB;
+                            int sumDif = Math.abs(sumA - sumB);
+                            List<String> teamList = new ArrayList<>();
+                            
+                            teamList.add(aList);
+                            teamList.add(bList);
+                            if(sumDif==0) {
+                                teamCom.put(sumDif, teamList);
+                                break;
+                            }
+                            if(teamCom.size() > 0) {
+                                for(Integer key : teamCom.keySet() ){
+                                    if(key > sumDif) {
+                                        teamCom.remove(key);
+                                        teamCom.put(sumDif, teamList);
+                                    }
+                                }
+                            }
+                            if(teamCom.size() == 0) {
+                                teamCom.put(sumDif, teamList);
+                            }
+                        }
+                    }
+                }
+            }    
+        }
+        
+        String[] aList = {};
+        String[] bList = {};
+        for(Integer key : teamCom.keySet() ){
+            System.out.println("mmr 차이 : "+key);
+            aList = teamCom.get(key).get(0).split("/");
+            bList = teamCom.get(key).get(1).split("/");
+        }
+        for (int i = 0; i < 5; i++) {
+            Object objectA = hashOperations.get("accept:"+listName, aList[i]);
+            Object objectB = hashOperations.get("accept:"+listName, bList[i]);
+            hashOperations.put("teamA:"+listName, aList[i], objectA);
+            hashOperations.put("teamB:"+listName, bList[i], objectB);
+        }
+    }
+
     // 팀 가르고 팀 정보 저장하기
     public HashMap<String, String> matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
         HashMap<String, String> result = new HashMap<>();
-        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
         return result;
     }
