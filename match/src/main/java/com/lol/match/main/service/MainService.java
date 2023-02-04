@@ -51,7 +51,7 @@ public class MainService {
         // map size가 10보다 작을때는 계속 머무르기
         if(hashOperations.size("map:"+listName) < 10) {
             condition = false;
-            String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto.getUserId());
+            String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto);
             if(status.equals("cancel")) {
                 result.put("code", "cancel");
                 return result;
@@ -97,7 +97,7 @@ public class MainService {
         hashOperations.delete("queueAll", userMatchDto.getUserId());
 
         // 잡은 큐에서 삭제
-        hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId());
+        hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
 
         // 포지션 수 줄임
         Object position = hashOperations.get("position:"+key.toString(), userMatchDto.getPosition());
@@ -124,7 +124,7 @@ public class MainService {
 
         String listName = userMatchDto.getQueueName();
         // 계속 돌기
-        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId())==false) {
+        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition())==false) {
             log.info("잘못된 요청입니다.");
             result.put("code", "fail");
             return result;
@@ -183,18 +183,17 @@ public class MainService {
 
 
     // 매칭 진행 : 큐 사이즈 확인 10이면 재귀 메소드 탈출
-    private String queueCheck(Long size, String listName, String id) throws InterruptedException, JsonMappingException, JsonProcessingException {
+    private String queueCheck(Long size, String listName, UserMatchDto userMatchDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        Object object = hashOperations.get("map:"+listName, id);
-        if(object==null) {
+        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition())==false) {
             return "cancel";
         }
         else {
             if(size < 10) {
                 System.out.println("와서 뱅글뱅글 도는중 : "+size);
                 Thread.sleep(1000);
-                String status = queueCheck(hashOperations.size("map:"+listName), listName, id);
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto);
                 if(status.equals("cancel")) {
                     return "cancel";
                 }
@@ -311,7 +310,7 @@ public class MainService {
         userMatchDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String user = objectMapper.writeValueAsString(userMatchDto);
-        hashOperations.put("map:"+queueName, userMatchDto.getUserId(), user);
+        hashOperations.put("map:"+queueName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition(), user);
     }
 
     // 포지션 확인
@@ -388,7 +387,7 @@ public class MainService {
     private void queueCancle(UserMatchDto userMatchDto, HashOperations<String, Object, Object> hashOperations) {
         hashOperations.put("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition(), 
         Integer.parseInt(hashOperations.get("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition()).toString())-1);
-            hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId());
+            hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
     }
 
     private void queueChange(UserMatchDto userMatchDto) {

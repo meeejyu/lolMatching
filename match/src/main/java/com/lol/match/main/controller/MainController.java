@@ -176,17 +176,11 @@ public class MainController {
 
     @GetMapping("/key")
     @ResponseBody
-    public String key() throws ParseException {
+    public String key() throws ParseException, JsonMappingException, JsonProcessingException {
         
         // 키 값 돌려서 포지션 알아내서 비교하기
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        // redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(UserMatchDto.class)); // Value: 직렬화에 사용할 Object 사용하기   
-        
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
-
-        // hashOperations.put("map:Gold_520_620_f7fe6169-8f2c-4491-b0c6-6a8079e790f2", 7);
-
         Map<Object, Object> map = hashOperations.entries("accept:Gold_520_620_f7fe6169-8f2c-4491-b0c6-6a8079e790f2");
 
         Map<String, String> topMap = new HashMap<>();
@@ -206,9 +200,10 @@ public class MainController {
 
         // postion이랑 mmr 얻어와서 비교하기
         for(Object key : map.keySet() ){
+            UserMatchDto user = objectMapper.readValue(map.get(key).toString(), UserMatchDto.class);
             if(key.toString().contains("top")) {
-                UserMatchDto userMatchDto = (UserMatchDto) map.get(key);
-                System.out.println(userMatchDto.toString());
+                // System.out.println(userMatchDto.toString());
+
             }
         }
 

@@ -60,7 +60,7 @@ public class RedisRepositoryConfig {
         
         redisTemplate.setConnectionFactory(redisConnectionFactory());  
         redisTemplate.setKeySerializer(new StringRedisSerializer());   // Key: String 
-        redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+        redisTemplate.setValueSerializer(new StringRedisSerializer()); // Value: 직렬화에 사용할 Object 사용하기   
 
         /*
          * 해쉬 사용시 사용
