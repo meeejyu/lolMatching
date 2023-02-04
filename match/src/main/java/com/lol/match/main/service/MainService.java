@@ -14,8 +14,6 @@ import java.util.UUID;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -41,12 +39,10 @@ public class MainService {
         int mmr = userMatchDto.getMmr();
         boolean condition = true;
 
-        // TODO : 해쉬맵이 있는지 체크하는 메소드 추가 필요, 맵값
+        // TODO : 해쉬맵이 있는지 체크하는 메소드 추가 필요, 맵값, 두번 클릭한건 아닌지 확인 필요
         String listName = isMap(mmr, userMatchDto.getRank(), userMatchDto);
 
         System.out.println("listName : " + listName);
-
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -61,10 +57,8 @@ public class MainService {
                 return result;
             }
         }
-        else {
-            result.put("code", "success");
-            result.put("listname", listName);    
-        }
+        result.put("code", "success");
+        result.put("listname", listName);    
         if(condition) {
             acceptTime(listName);
         }
@@ -85,8 +79,6 @@ public class MainService {
         System.out.println("saveTime : "+saveTime);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
-
         hashOperations.put("acceptTime", listName, saveTime);
     }
 
@@ -96,8 +88,6 @@ public class MainService {
         HashMap<String, String> result = new HashMap<>();
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
         Object key = hashOperations.get("queueAll", userMatchDto.getUserId());
 
@@ -116,8 +106,7 @@ public class MainService {
             hashOperations.delete("position:"+key.toString(), userMatchDto.getPosition());
         }
         else if(Integer.parseInt(position.toString())==2) {
-            redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
-            hashOperations.put("position:"+key.toString(), userMatchDto.getPosition(), 1);
+            hashOperations.put("position:"+key.toString(), userMatchDto.getPosition(), "1");
         }
     
         result.put("code", "success");
@@ -131,6 +120,7 @@ public class MainService {
         // TODO : 시간 추가, 재귀 메소드 수정 -> 추가
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        String user = objectMapper.writeValueAsString(userMatchDto);
 
         String listName = userMatchDto.getQueueName();
         // 계속 돌기
@@ -140,15 +130,12 @@ public class MainService {
             return result;
         }
         else {
-            redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
-            hashOperations.put("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId(), userMatchDto);
+            hashOperations.put("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition(), user);
             
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
 
             Date date = new Date();
             System.out.println("date : "+date);
-    
-            redisTemplate.setHashValueSerializer(new StringRedisSerializer());
     
             Object object = hashOperations.get("acceptTime", listName);
     
@@ -190,7 +177,6 @@ public class MainService {
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        hashOperations.values("accept");
         return result;
     }
 
@@ -200,8 +186,6 @@ public class MainService {
     private String queueCheck(Long size, String listName, String id) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
-
         Object object = hashOperations.get("map:"+listName, id);
         if(object==null) {
             return "cancel";
@@ -223,7 +207,6 @@ public class MainService {
     private String isMap(int mmr, String rank, UserMatchDto userMatchDto) throws Exception {
 
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
-        redisTemplate.setValueSerializer(new StringRedisSerializer());
 
         String queueName = "";
         int min = mmr > 150 ? mmr - 50 : 100;
@@ -292,7 +275,6 @@ public class MainService {
                 }
             }
         }    
-        redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
 
         // mmr 범위 조정
         for(String fileterList : rankFilterList) {
@@ -316,7 +298,7 @@ public class MainService {
             String uuid = UUID.randomUUID().toString();
             queueName = rank+"_"+min+"_"+max+"_"+uuid;
             queueCreate(queueName, userMatchDto);
-            hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 1);
+            hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
             redisTemplate.opsForList().rightPush("queueList1", queueName);
 
         }
@@ -325,18 +307,17 @@ public class MainService {
     }
 
     // 큐 생성
-    private void queueCreate(String queueName, UserMatchDto userMatchDto) {
+    private void queueCreate(String queueName, UserMatchDto userMatchDto) throws JsonProcessingException {
         userMatchDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
-        hashOperations.put("map:"+queueName, userMatchDto.getUserId(), userMatchDto);
+        String user = objectMapper.writeValueAsString(userMatchDto);
+        hashOperations.put("map:"+queueName, userMatchDto.getUserId(), user);
     }
 
     // 포지션 확인
-    private String positionCheck(List<String> positionList, UserMatchDto userMatchDto, int min, int max) {
+    private String positionCheck(List<String> positionList, UserMatchDto userMatchDto, int min, int max) throws JsonProcessingException {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
         String queueName = "";
 
         for (int i = 0; i < positionList.size(); i++) {
@@ -349,7 +330,7 @@ public class MainService {
                         queueCreate(queueName, userMatchDto);
                         System.out.println("일치하는 mmr이 있으나 포지션이 없음.");
                         System.out.println("큐 새로 생성");
-                        hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 1);
+                        hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
                         redisTemplate.opsForList().rightPush("queueList1", queueName);
                         System.out.println("큐 이름 테스트 : "+queueName);
                         return queueName;
@@ -365,7 +346,7 @@ public class MainService {
                     queueName = positionList.get(i);
                     queueCreate(queueName, userMatchDto);
                     System.out.println("큐 이름 테스트 : "+queueName);
-                    hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 2);
+                    hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "2");
                     return queueName;
                 }
             }
@@ -373,7 +354,7 @@ public class MainService {
                 // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 0인경우, 없는 경우
                 queueName = positionList.get(i);
                 queueCreate(queueName, userMatchDto);
-                hashOperations.put("position:"+queueName, userMatchDto.getPosition(), 1);
+                hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
                 return queueName;
             }
         }
@@ -412,7 +393,6 @@ public class MainService {
 
     private void queueChange(UserMatchDto userMatchDto) {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
 
         LocalDateTime time = LocalDateTime.now();
 

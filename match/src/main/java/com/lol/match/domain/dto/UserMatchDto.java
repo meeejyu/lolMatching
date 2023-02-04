@@ -25,8 +25,6 @@ public class UserMatchDto {
 
     private String rank;
 
-    private int time; // 24시에서 0시로 넘어갈때를 잘 고려해야함.
-
     private String queueName;
     // private String groupId;
 

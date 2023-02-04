@@ -66,8 +66,8 @@ public class RedisRepositoryConfig {
          * 해쉬 사용시 사용
          */
         redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        // redisTemplate.setHashValueSerializer(new StringRedisSerializer());
-        redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+        // redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
 
         return redisTemplate;
     }

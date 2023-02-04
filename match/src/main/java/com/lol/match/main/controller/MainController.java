@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisOperations;
@@ -177,15 +178,41 @@ public class MainController {
     @ResponseBody
     public String key() throws ParseException {
         
+        // 키 값 돌려서 포지션 알아내서 비교하기
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        // redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(String.class)); // Value: 직렬화에 사용할 Object 사용하기   
+        // redisTemplate.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(UserMatchDto.class)); // Value: 직렬화에 사용할 Object 사용하기   
         
         redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
-        List<Object> list = hashOperations.values("map:Gold_520_620_f7fe6169-8f2c-4491-b0c6-6a8079e790f2");
+        // hashOperations.put("map:Gold_520_620_f7fe6169-8f2c-4491-b0c6-6a8079e790f2", 7);
 
-        System.out.println(list.toString());
+        Map<Object, Object> map = hashOperations.entries("accept:Gold_520_620_f7fe6169-8f2c-4491-b0c6-6a8079e790f2");
+
+        Map<String, String> topMap = new HashMap<>();
+
+        Map<String, String> junglepMap = new HashMap<>();
+
+        Map<String, String> midMap = new HashMap<>();
+
+        Map<String, String> bottomMap = new HashMap<>();
+
+        Map<String, String> supportMap = new HashMap<>();
+
+        Map<String, String> aMap = new HashMap<>();
+
+        Map<String, String> bMap = new HashMap<>();
+
+
+        // postion이랑 mmr 얻어와서 비교하기
+        for(Object key : map.keySet() ){
+            if(key.toString().contains("top")) {
+                UserMatchDto userMatchDto = (UserMatchDto) map.get(key);
+                System.out.println(userMatchDto.toString());
+            }
+        }
+
+        System.out.println(map.toString());
 
         return "ok";
     }
