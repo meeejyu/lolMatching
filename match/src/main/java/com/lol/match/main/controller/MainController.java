@@ -12,7 +12,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -55,7 +57,7 @@ public class MainController {
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
-    @PostMapping("/queue/delete")
+    @PostMapping("/queue/cancel")
     @ResponseBody
     public HashMap<String, String> queueListDelete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException {
 
@@ -82,6 +84,16 @@ public class MainController {
         HashMap<String, String> result = mainService.matchComplete(userMatchDto);
         
         return "matchSuccess";
+    }
+
+    // 큐를 지우고 싶을때
+    @DeleteMapping("/queue/delete/{listName}")
+    @ResponseBody
+    public String delete(@PathVariable String listName) {
+        
+        mainService.delete(listName);
+
+        return "ok";
     }
 
 
@@ -176,7 +188,7 @@ public class MainController {
     @GetMapping("/key")
     @ResponseBody
     public String key() throws ParseException, JsonMappingException, JsonProcessingException {
-
+        
         return "ok";
     }
 

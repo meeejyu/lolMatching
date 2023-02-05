@@ -51,7 +51,6 @@ public class MainService {
 
             hashOperations.put("queueAll", userMatchDto.getUserId(), listName);
 
-            // TODO : 최대 시간은 5분
             // map size가 10보다 작을때는 계속 머무르기
             if(hashOperations.size("map:"+listName) < 10) {
                 condition = false;
@@ -438,7 +437,7 @@ public class MainService {
         // 계급 필터링
         for (Object key : queueList) {
             // 큐 사이즈 확인 
-            if(hashOperations.size("map:"+key.toString()) < 10) {
+            if(hashOperations.size("map:"+key.toString()) < 10 && hashOperations.size("map:"+key.toString()) > 0) {
                 String name = String.valueOf(key).split("_")[0];
                 // System.out.println("rank : " + name);
                 for (int i = 0; i < rankList.size(); i++) {
@@ -534,6 +533,30 @@ public class MainService {
 
         return queueName;
 
+    }
+
+    public void delete(String listName) {
+
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        int size = hashOperations.entries("map:"+listName).size();
+
+        hashOperations.getOperations().delete("map:"+listName);        
+        hashOperations.getOperations().delete("position:"+listName);
+
+        Map<Object, Object> allMap = hashOperations.entries("queueAll");
+        int count = 0;
+        
+        for(Object key : allMap.keySet()) {
+            if(hashOperations.get("queueAll", key).toString().equals(listName)) {
+                hashOperations.delete("queueAll", key);
+                count += 1;
+            }
+            // 큐에 들어있는 사이즈만큼 다 지우면 바로 탈출
+            if(count==size) {
+                break;
+            }
+        }
     }
 
 

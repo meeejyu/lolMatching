@@ -34,9 +34,9 @@ public class SchedulerService {
             int count = 0;
 
             while(condition) {
-                if(hashOperations.size(queueList.get(count).toString()) == 0) {
+                if(hashOperations.size("map:"+queueList.get(count).toString()) == 0) {
                     operations.opsForList().leftPop("queueList");
-                    count = count + 1;
+                    count =+ 1;
                     if(operations.opsForList().size("queueList") == 0) {
                         condition = false;
                     }
