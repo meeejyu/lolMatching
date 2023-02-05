@@ -39,29 +39,34 @@ public class MainService {
         HashMap<String, String> result = new HashMap<>();
         int mmr = userMatchDto.getMmr();
         boolean condition = true;
-
-        // TODO : 해쉬맵이 있는지 체크하는 메소드 추가 필요, 맵값, 두번 클릭한건 아닌지 확인 필요
-        String listName = isMap(mmr, userMatchDto.getRank(), userMatchDto);
-
-        System.out.println("listName : " + listName);
-
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
-        hashOperations.put("queueAll", userMatchDto.getUserId(), listName);
-
-        // map size가 10보다 작을때는 계속 머무르기
-        if(hashOperations.size("map:"+listName) < 10) {
-            condition = false;
-            String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto);
-            if(status.equals("cancel")) {
-                result.put("code", "cancel");
-                return result;
-            }
+        if(hashOperations.hasKey("queueAll", userMatchDto.getUserId())) {
+            result.put("code", "fail");
+            result.put("message", "잘못된 요청입니다.");
         }
-        result.put("code", "success");
-        result.put("listname", listName);    
-        if(condition) {
-            acceptTime(listName);
+        else {
+            // TODO : 두번 클릭한건 아닌지 확인 필요 -> 완료
+            String listName = isMap(mmr, userMatchDto.getRank(), userMatchDto);
+
+            System.out.println("listName : " + listName);
+
+            hashOperations.put("queueAll", userMatchDto.getUserId(), listName);
+
+            // map size가 10보다 작을때는 계속 머무르기
+            if(hashOperations.size("map:"+listName) < 10) {
+                condition = false;
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto);
+                if(status.equals("cancel")) {
+                    result.put("code", "cancel");
+                    return result;
+                }
+            }
+            result.put("code", "success");
+            result.put("listname", listName);    
+            if(condition) {
+                acceptTime(listName);
+            }
         }
         return result;
     }
@@ -90,27 +95,33 @@ public class MainService {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        Object key = hashOperations.get("queueAll", userMatchDto.getUserId());
+        if(hashOperations.hasKey("queueAll", userMatchDto.getUserId())) {
+            Object key = hashOperations.get("queueAll", userMatchDto.getUserId());
 
-        System.out.println(key.toString());
-
-        // 전체 키에서 삭제
-        hashOperations.delete("queueAll", userMatchDto.getUserId());
-
-        // 잡은 큐에서 삭제
-        hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
-
-        // 포지션 수 줄임
-        Object position = hashOperations.get("position:"+key.toString(), userMatchDto.getPosition());
-
-        if(Integer.parseInt(position.toString())==1) {
-            hashOperations.delete("position:"+key.toString(), userMatchDto.getPosition());
-        }
-        else if(Integer.parseInt(position.toString())==2) {
-            hashOperations.put("position:"+key.toString(), userMatchDto.getPosition(), "1");
-        }
+            System.out.println(key.toString());
     
-        result.put("code", "success");
+            // 전체 키에서 삭제
+            hashOperations.delete("queueAll", userMatchDto.getUserId());
+    
+            // 잡은 큐에서 삭제
+            hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
+    
+            // 포지션 수 줄임
+            Object position = hashOperations.get("position:"+key.toString(), userMatchDto.getPosition());
+    
+            if(Integer.parseInt(position.toString())==1) {
+                hashOperations.delete("position:"+key.toString(), userMatchDto.getPosition());
+            }
+            else if(Integer.parseInt(position.toString())==2) {
+                hashOperations.put("position:"+key.toString(), userMatchDto.getPosition(), "1");
+            }
+        
+            result.put("code", "success");
+        }
+        else {
+            result.put("code", "fail");
+            result.put("message", "잘못된 요청입니다.");
+        }
 
         return result;
     }
@@ -123,8 +134,16 @@ public class MainService {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String user = objectMapper.writeValueAsString(userMatchDto);
         boolean condition = true;
-
+        
         String listName = userMatchDto.getQueueName();
+        
+        // 두번 요청했을때 예외 처리
+        if(hashOperations.hasKey("accept:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition())==true) {
+            result.put("code", "fail");
+            result.put("message", "중복된 요청입니다.");
+            return result;
+        }
+
         // 계속 돌기
         if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition())==false) {
             log.info("잘못된 요청입니다.");
@@ -161,20 +180,15 @@ public class MainService {
                 if(hashOperations.size("accept:"+userMatchDto.getQueueName())==10) {
                     result.put("code", "success");
                     result.put("listname", listName);
+                    if(condition) {
+                        teamDivide(listName);
+                    }
                     return result;
                 }
             }
-            // 한번 더 사이즈 검토
-            if(hashOperations.size("accept:"+userMatchDto.getQueueName())==10) {
-                result.put("code", "success");
-                result.put("listname", listName);
-                if(condition) {
-                    teamDivide(listName);
-                }
-            }
-            else {
-                result.put("code", "fail");
-            }
+            // 시간안에 모두 동의하지 않은 경우
+            result.put("code", "fail");
+            hashOperations.delete("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
             return result;
         }
 
