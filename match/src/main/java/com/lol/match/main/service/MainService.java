@@ -2,8 +2,6 @@ package com.lol.match.main.service;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -53,9 +51,12 @@ public class MainService {
 
             hashOperations.put("queueAll", userMatchDto.getUserId(), listName);
 
+            // TODO : 최대 시간은 5분
             // map size가 10보다 작을때는 계속 머무르기
             if(hashOperations.size("map:"+listName) < 10) {
                 condition = false;
+
+                // 중도 취소 여부 확인
                 String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto);
                 if(status.equals("cancel")) {
                     result.put("code", "cancel");
@@ -102,7 +103,7 @@ public class MainService {
     
             // 전체 키에서 삭제
             hashOperations.delete("queueAll", userMatchDto.getUserId());
-    
+
             // 잡은 큐에서 삭제
             hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
     
@@ -426,10 +427,11 @@ public class MainService {
         }
 
         // Redis Data List 출력
-        Long listSize = operations.opsForList().size("queueList1");
-        List<Object> queueList = operations.opsForList().range("queueList1", 0, listSize-1);
+        Long listSize = operations.opsForList().size("queueList");
+        List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
         List<String> rankFilterList = new ArrayList<>();
         List<String> positionList = new ArrayList<>();
 
@@ -470,7 +472,7 @@ public class MainService {
             queueName = rank+"_"+min+"_"+max+"_"+uuid;
             queueCreate(queueName, userMatchDto);
             hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
-            redisTemplate.opsForList().rightPush("queueList1", queueName);
+            redisTemplate.opsForList().rightPush("queueList", queueName);
 
         }
 
@@ -502,7 +504,7 @@ public class MainService {
                         System.out.println("일치하는 mmr이 있으나 포지션이 없음.");
                         System.out.println("큐 새로 생성");
                         hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
-                        redisTemplate.opsForList().rightPush("queueList1", queueName);
+                        redisTemplate.opsForList().rightPush("queueList", queueName);
                         System.out.println("큐 이름 테스트 : "+queueName);
                         return queueName;
                     }
@@ -555,39 +557,39 @@ public class MainService {
 
 
 
-    // 대전 찾기 중 실패
-    private void queueCancle(UserMatchDto userMatchDto, HashOperations<String, Object, Object> hashOperations) {
-        hashOperations.put("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition(), 
-        Integer.parseInt(hashOperations.get("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition()).toString())-1);
-            hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
-    }
+    // // 대전 찾기 중 실패
+    // private void queueCancle(UserMatchDto userMatchDto, HashOperations<String, Object, Object> hashOperations) {
+    //     hashOperations.put("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition(), 
+    //     Integer.parseInt(hashOperations.get("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition()).toString())-1);
+    //         hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
+    // }
 
-    private void queueChange(UserMatchDto userMatchDto) {
-        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+    // private void queueChange(UserMatchDto userMatchDto) {
+    //     HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        LocalDateTime time = LocalDateTime.now();
+    //     LocalDateTime time = LocalDateTime.now();
 
-        String nowTime = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        String queueName = "";
-        System.out.println("시간 : " + nowTime);
+    //     String nowTime = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    //     String queueName = "";
+    //     System.out.println("시간 : " + nowTime);
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        try {
-            Date nowDate = sdf.parse(nowTime);
-            Date originalDate = sdf.parse(userMatchDto.getQueueName().split("_")[3]);
+    //     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    //     try {
+    //         Date nowDate = sdf.parse(nowTime);
+    //         Date originalDate = sdf.parse(userMatchDto.getQueueName().split("_")[3]);
 
-            if(nowDate.after(originalDate)) {
-                System.out.println("리스트 및 hashMap 변경");
-                // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
-                String[] queueList = userMatchDto.getQueueName().split("_");
-                int min = Integer.parseInt(queueList[1]) > 150 ? Integer.parseInt(queueList[1]) - 5 : 100;
-                int max = Integer.parseInt(queueList[1]) + 5;
-                String uuid = UUID.randomUUID().toString();
-                queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+"시간"+"_"+uuid;
-            }
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+    //         if(nowDate.after(originalDate)) {
+    //             System.out.println("리스트 및 hashMap 변경");
+    //             // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
+    //             String[] queueList = userMatchDto.getQueueName().split("_");
+    //             int min = Integer.parseInt(queueList[1]) > 150 ? Integer.parseInt(queueList[1]) - 5 : 100;
+    //             int max = Integer.parseInt(queueList[1]) + 5;
+    //             String uuid = UUID.randomUUID().toString();
+    //             queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+"시간"+"_"+uuid;
+    //         }
+    //     } catch (ParseException e) {
+    //         e.printStackTrace();
+    //     }
 
-    }
+    // }
 }
