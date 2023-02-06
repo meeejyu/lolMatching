@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/mypetlikeit_db
-    username: miju
-    password: alwn1225@
+    url: jdbc:mysql://localhost:3306/matching_db
+    username: match
+    password: matchpw124
   
   mvc:
     view:

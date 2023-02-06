@@ -182,6 +182,8 @@ public class MainService {
                     result.put("listname", listName);
                     if(condition) {
                         teamDivide(listName);
+                        // 팀 정보 제외 전체 삭제
+                        delete(listName);                        
                     }
                     return result;
                 }
@@ -535,6 +537,7 @@ public class MainService {
 
     }
 
+    // 큐를 지우기
     public void delete(String listName) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -543,6 +546,7 @@ public class MainService {
 
         hashOperations.getOperations().delete("map:"+listName);        
         hashOperations.getOperations().delete("position:"+listName);
+        hashOperations.getOperations().delete("accept:"+listName);
 
         Map<Object, Object> allMap = hashOperations.entries("queueAll");
         int count = 0;
