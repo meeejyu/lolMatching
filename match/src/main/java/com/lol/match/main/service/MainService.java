@@ -18,7 +18,8 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lol.match.domain.dto.UserMatchDto;
+import com.lol.match.main.mapper.MainMapper;
+import com.lol.match.main.model.UserMatchDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MainService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+
+    private final MainMapper mainMapper;
 
     private final ObjectMapper objectMapper;
  
@@ -346,10 +349,27 @@ public class MainService {
         }
     }
 
-    // 팀 가르고 팀 정보 저장하기
+    // 팀 배정 정보 및 본인이 속한 팀 정보 주기 
     public HashMap<String, String> matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
         HashMap<String, String> result = new HashMap<>();
+
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        
+        Map<Object, Object> teamAMap = hashOperations.entries("teamA:"+userMatchDto.getQueueName());
+        Map<Object, Object> teamBMap = hashOperations.entries("teamB:"+userMatchDto.getQueueName());
+
+        System.out.println("팀A : "+teamAMap);
+        System.out.println("팀B : "+teamBMap);
+
+        result.put("A", teamAMap.toString());
+        result.put("B", teamBMap.toString());
+        if(hashOperations.hasKey("teamA:"+userMatchDto.getQueueName(), userMatchDto.getUserId())) {
+            result.put("userInfo", "A");
+        }
+        else {
+            result.put("userInfo", "B");
+        }
         
         return result;
     }

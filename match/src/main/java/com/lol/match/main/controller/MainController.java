@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lol.match.domain.dto.UserMatchDto;
+import com.lol.match.main.model.UserMatchDto;
 import com.lol.match.main.service.MainService;
 
 import lombok.RequiredArgsConstructor;
@@ -47,6 +47,9 @@ public class MainController {
         return "main";
     }
 
+    // 매칭 하기
+    // TODO : TEST
+    // db 접속 정보를 가저와서 세팅하는걸로 수정
     @PostMapping("/match")
     @ResponseBody
     public HashMap<String, String> match(UserMatchDto userMatchDto) throws Exception {
@@ -56,7 +59,7 @@ public class MainController {
         return result;
     }
 
-    // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
+    // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : queue에서 해당 유저 정보 삭제
     @PostMapping("/queue/cancel")
     @ResponseBody
     public HashMap<String, String> queueListDelete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException {
@@ -76,14 +79,15 @@ public class MainController {
         return result;
     }
 
-    // 대전 매칭 완료 후 팀갈라서 각자 팀 보여주기
+    // TODO : TEST
+    // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
     @PostMapping("/match/complete")
     @ResponseBody
-    public String matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public HashMap<String, String> matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
         HashMap<String, String> result = mainService.matchComplete(userMatchDto);
         
-        return "matchSuccess";
+        return result;
     }
 
     // 큐를 지우고 싶을때

@@ -1,4 +1,4 @@
-package com.lol.match.domain.dto;
+package com.lol.match.main.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
