@@ -1,5 +1,9 @@
 package com.lol.match.domain.dto;
 
+import java.util.List;
+
+import com.lol.match.main.model.UserMatchDto;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,14 +15,10 @@ import lombok.ToString;
 @AllArgsConstructor
 public class GroupMatchDto {
 
-    private String groupName;
+    private String userInfo;
 
-    private String userId;
+    private List<UserMatchDto> teamAList;
 
-    private int mmr;
-
-    private String userNickname;
-
-    private String position;
+    private List<UserMatchDto> teamBList;
 
 }

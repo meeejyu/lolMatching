@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lol.match.domain.dto.GroupMatchDto;
 import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.UserMatchDto;
 
@@ -349,32 +350,45 @@ public class MainService {
         }
     }
 
-    // 팀 배정 정보 및 본인이 속한 팀 정보 주기 
-    public HashMap<String, String> matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
+    public GroupMatchDto matchComplete(UserMatchDto userMatchDto) throws Exception {
         
-        HashMap<String, String> result = new HashMap<>();
-
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
+        String userInfo;
+
+        if(hashOperations.hasKey("teamA:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition())) {
+            userInfo = "A";
+        }
+        else if(hashOperations.hasKey("teamB:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition())){
+            userInfo = "B";
+        }
+        else {
+            throw new Exception("잘못된 요청입니다");
+        }
         Map<Object, Object> teamAMap = hashOperations.entries("teamA:"+userMatchDto.getQueueName());
         Map<Object, Object> teamBMap = hashOperations.entries("teamB:"+userMatchDto.getQueueName());
 
-        System.out.println("팀A : "+teamAMap);
-        System.out.println("팀B : "+teamBMap);
-
-        result.put("A", teamAMap.toString());
-        result.put("B", teamBMap.toString());
-        if(hashOperations.hasKey("teamA:"+userMatchDto.getQueueName(), userMatchDto.getUserId())) {
-            result.put("userInfo", "A");
-        }
-        else {
-            result.put("userInfo", "B");
-        }
+        GroupMatchDto groupMatchDto = new GroupMatchDto(userInfo, teamInfo(teamAMap), teamInfo(teamBMap));
         
-        return result;
+        return groupMatchDto;
+
     }
 
+    // 팀 정보 List 형태로 저장
+    private List<UserMatchDto> teamInfo(Map<Object, Object> teamMap) throws JsonMappingException, JsonProcessingException {
+        int count = 0;
 
+        List<UserMatchDto> teamList = new ArrayList<>();
+
+        for(Object key : teamMap.keySet()) {
+            UserMatchDto userMatchDto = objectMapper.readValue(teamMap.get(key).toString(), UserMatchDto.class);
+            teamList.add(count, userMatchDto);
+            count += 1;
+        }
+
+        return teamList;
+    }
 
     // 매칭 진행 : 큐 사이즈 확인 10이면 재귀 메소드 탈출
     private String queueCheck(Long size, String listName, UserMatchDto userMatchDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
@@ -567,6 +581,7 @@ public class MainService {
         hashOperations.getOperations().delete("map:"+listName);        
         hashOperations.getOperations().delete("position:"+listName);
         hashOperations.getOperations().delete("accept:"+listName);
+        hashOperations.delete("acceptTime", listName);
 
         Map<Object, Object> allMap = hashOperations.entries("queueAll");
         int count = 0;

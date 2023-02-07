@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lol.match.domain.dto.GroupMatchDto;
 import com.lol.match.main.model.UserMatchDto;
 import com.lol.match.main.service.MainService;
 
@@ -48,7 +49,7 @@ public class MainController {
     }
 
     // 매칭 하기
-    // TODO : TEST
+    // TODO : TEST -> 완료
     // db 접속 정보를 가저와서 세팅하는걸로 수정
     @PostMapping("/match")
     @ResponseBody
@@ -79,15 +80,16 @@ public class MainController {
         return result;
     }
 
-    // TODO : TEST
+    // TODO : TEST -> 완료
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
     @PostMapping("/match/complete")
     @ResponseBody
-    public HashMap<String, String> matchComplete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public GroupMatchDto matchComplete(UserMatchDto userMatchDto) throws Exception {
         
-        HashMap<String, String> result = mainService.matchComplete(userMatchDto);
+        GroupMatchDto groupMatchDto = mainService.matchComplete(userMatchDto);
         
-        return result;
+        return groupMatchDto;
+
     }
 
     // 큐를 지우고 싶을때
