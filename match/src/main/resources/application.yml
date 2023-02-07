@@ -12,4 +12,10 @@ spring:
   redis:
     port: 6379
     host: localhost
+
+mybatis:
+  type-aliases-package: com.match
+  mapper-locations: mapper/*.xml
+  configuration:
+      map-underscore-to-camel-case: true
   

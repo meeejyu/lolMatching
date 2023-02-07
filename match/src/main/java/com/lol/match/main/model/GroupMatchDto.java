@@ -1,8 +1,6 @@
-package com.lol.match.domain.dto;
+package com.lol.match.main.model;
 
 import java.util.List;
-
-import com.lol.match.main.model.UserMatchDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

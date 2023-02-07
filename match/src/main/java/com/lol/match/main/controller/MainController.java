@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lol.match.domain.dto.GroupMatchDto;
+import com.lol.match.main.model.GroupMatchDto;
 import com.lol.match.main.model.UserMatchDto;
 import com.lol.match.main.service.MainService;
 
@@ -159,11 +159,11 @@ public class MainController {
     public String write(@RequestBody UserMatchDto userMatchDto) {
 
         // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
-        int mmr = userMatchDto.getMmr();
+        int mmr = userMatchDto.getUserMmr();
         int min = mmr > 150 ? mmr - 50 : 100;
         int max = mmr + 50;
 
-        String listname = userMatchDto.getRank() + "_" + min + "_" + max;
+        String listname = userMatchDto.getUserRank() + "_" + min + "_" + max;
 
         // // String listname = "queue";
 

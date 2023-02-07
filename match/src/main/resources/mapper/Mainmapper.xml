@@ -3,4 +3,13 @@
 
 <mapper namespace="com.lol.match.main.mapper.MainMapper">
 
+    <select id="findBySettingId" resultType="com.lol.match.main.model.SettingDto">
+        SELECT * FROM TB_SETTING ts 
+            LEFT JOIN TB_RANK tr
+            ON ts.SETTING_ID = tr.SETTING_ID 
+            LEFT JOIN TB_POSITION tp 
+            ON ts.SETTING_ID = tp.SETTING_ID 
+        WHERE ts.SETTING_ID = 1 
+    </select>
+
 </mapper>

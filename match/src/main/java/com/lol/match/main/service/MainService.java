@@ -18,8 +18,9 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lol.match.domain.dto.GroupMatchDto;
 import com.lol.match.main.mapper.MainMapper;
+import com.lol.match.main.model.GroupMatchDto;
+import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserMatchDto;
 
 import lombok.RequiredArgsConstructor;
@@ -39,17 +40,26 @@ public class MainService {
     public HashMap<String, String> match(UserMatchDto userMatchDto) throws Exception {
         
         HashMap<String, String> result = new HashMap<>();
-        int mmr = userMatchDto.getMmr();
+        int mmr = userMatchDto.getUserMmr();
         boolean condition = true;
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
+        // DB로 세팅 정보 가져오기
+        SettingDto settingDto = mainMapper.findBySettingId();
+
+        // mmr만 고려하여 매칭 시켜주는 경우
+
+        // mmr,rank, position 고려하여 매칭 시켜주는 경우
+        // mmr, rank 매칭 시켜주는 경우
+        // mmr, position 고려하여 매칭 시켜주는 경우
+        
+        // 두번 요청했을 경우, 예외
         if(hashOperations.hasKey("queueAll", userMatchDto.getUserId())) {
             result.put("code", "fail");
             result.put("message", "잘못된 요청입니다.");
         }
         else {
-            // TODO : 두번 클릭한건 아닌지 확인 필요 -> 완료
-            String listName = isMap(mmr, userMatchDto.getRank(), userMatchDto);
+            String listName = isMap(mmr, userMatchDto.getUserRank(), userMatchDto);
 
             System.out.println("listName : " + listName);
 
@@ -69,6 +79,7 @@ public class MainService {
             result.put("code", "success");
             result.put("listname", listName);    
             if(condition) {
+                // 매칭 동의 시간 추가
                 acceptTime(listName);
             }
         }
@@ -108,16 +119,16 @@ public class MainService {
             hashOperations.delete("queueAll", userMatchDto.getUserId());
 
             // 잡은 큐에서 삭제
-            hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
+            hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition());
     
             // 포지션 수 줄임
-            Object position = hashOperations.get("position:"+key.toString(), userMatchDto.getPosition());
+            Object position = hashOperations.get("position:"+key.toString(), userMatchDto.getUserPosition());
     
             if(Integer.parseInt(position.toString())==1) {
-                hashOperations.delete("position:"+key.toString(), userMatchDto.getPosition());
+                hashOperations.delete("position:"+key.toString(), userMatchDto.getUserPosition());
             }
             else if(Integer.parseInt(position.toString())==2) {
-                hashOperations.put("position:"+key.toString(), userMatchDto.getPosition(), "1");
+                hashOperations.put("position:"+key.toString(), userMatchDto.getUserPosition(), "1");
             }
         
             result.put("code", "success");
@@ -142,20 +153,20 @@ public class MainService {
         String listName = userMatchDto.getQueueName();
         
         // 두번 요청했을때 예외 처리
-        if(hashOperations.hasKey("accept:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition())==true) {
+        if(hashOperations.hasKey("accept:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())==true) {
             result.put("code", "fail");
             result.put("message", "중복된 요청입니다.");
             return result;
         }
 
         // 계속 돌기
-        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition())==false) {
+        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())==false) {
             log.info("잘못된 요청입니다.");
             result.put("code", "fail");
             return result;
         }
         else {
-            hashOperations.put("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition(), user);
+            hashOperations.put("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition(), user);
             
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
 
@@ -194,7 +205,7 @@ public class MainService {
             }
             // 시간안에 모두 동의하지 않은 경우
             result.put("code", "fail");
-            hashOperations.delete("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
+            hashOperations.delete("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition());
             return result;
         }
 
@@ -227,23 +238,23 @@ public class MainService {
         for(Object key : map.keySet() ){
             UserMatchDto user = objectMapper.readValue(map.get(key).toString(), UserMatchDto.class);
             if(key.toString().contains("top")) {
-                topMap.put(key, user.getMmr());
+                topMap.put(key, user.getUserMmr());
                 topList.add(key);
             }
             else if(key.toString().contains("support")) {
-                supportMap.put(key, user.getMmr());
+                supportMap.put(key, user.getUserMmr());
                 supportList.add(key);
             }
             else if(key.toString().contains("mid")) {
-                midMap.put(key, user.getMmr());
+                midMap.put(key, user.getUserMmr());
                 midList.add(key);
             }
             else if(key.toString().contains("jungle")) {
-                junglepMap.put(key, user.getMmr());
+                junglepMap.put(key, user.getUserMmr());
                 jungleList.add(key);
             }
             else if(key.toString().contains("bottom")) {
-                bottomMap.put(key, user.getMmr());
+                bottomMap.put(key, user.getUserMmr());
                 bottomList.add(key);
             }
         }
@@ -357,10 +368,10 @@ public class MainService {
         
         String userInfo;
 
-        if(hashOperations.hasKey("teamA:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition())) {
+        if(hashOperations.hasKey("teamA:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())) {
             userInfo = "A";
         }
-        else if(hashOperations.hasKey("teamB:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition())){
+        else if(hashOperations.hasKey("teamB:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())){
             userInfo = "B";
         }
         else {
@@ -394,7 +405,7 @@ public class MainService {
     private String queueCheck(Long size, String listName, UserMatchDto userMatchDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition())==false) {
+        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())==false) {
             return "cancel";
         }
         else {
@@ -506,7 +517,7 @@ public class MainService {
             String uuid = UUID.randomUUID().toString();
             queueName = rank+"_"+min+"_"+max+"_"+uuid;
             queueCreate(queueName, userMatchDto);
-            hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
+            hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "1");
             redisTemplate.opsForList().rightPush("queueList", queueName);
 
         }
@@ -519,7 +530,7 @@ public class MainService {
         userMatchDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String user = objectMapper.writeValueAsString(userMatchDto);
-        hashOperations.put("map:"+queueName, userMatchDto.getUserId()+"_"+userMatchDto.getPosition(), user);
+        hashOperations.put("map:"+queueName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition(), user);
     }
 
     // 포지션 확인
@@ -530,15 +541,15 @@ public class MainService {
 
         for (int i = 0; i < positionList.size(); i++) {
             // 포지션 조건 추가
-            if(hashOperations.hasKey("position:"+positionList.get(i), userMatchDto.getPosition())) {
-                if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), userMatchDto.getPosition()).toString())>1) {
+            if(hashOperations.hasKey("position:"+positionList.get(i), userMatchDto.getUserPosition())) {
+                if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), userMatchDto.getUserPosition()).toString())>1) {
                     if(i==positionList.size()-1) {
                         String uuid = UUID.randomUUID().toString();
-                        queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+uuid;
+                        queueName = userMatchDto.getUserRank()+"_"+min+"_"+max+"_"+uuid;
                         queueCreate(queueName, userMatchDto);
                         System.out.println("일치하는 mmr이 있으나 포지션이 없음.");
                         System.out.println("큐 새로 생성");
-                        hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
+                        hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "1");
                         redisTemplate.opsForList().rightPush("queueList", queueName);
                         System.out.println("큐 이름 테스트 : "+queueName);
                         return queueName;
@@ -554,7 +565,7 @@ public class MainService {
                     queueName = positionList.get(i);
                     queueCreate(queueName, userMatchDto);
                     System.out.println("큐 이름 테스트 : "+queueName);
-                    hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "2");
+                    hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "2");
                     return queueName;
                 }
             }
@@ -562,7 +573,7 @@ public class MainService {
                 // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 0인경우, 없는 경우
                 queueName = positionList.get(i);
                 queueCreate(queueName, userMatchDto);
-                hashOperations.put("position:"+queueName, userMatchDto.getPosition(), "1");
+                hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "1");
                 return queueName;
             }
         }
@@ -598,60 +609,4 @@ public class MainService {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // // 대전 찾기 중 실패
-    // private void queueCancle(UserMatchDto userMatchDto, HashOperations<String, Object, Object> hashOperations) {
-    //     hashOperations.put("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition(), 
-    //     Integer.parseInt(hashOperations.get("position:"+userMatchDto.getQueueName(), userMatchDto.getPosition()).toString())-1);
-    //         hashOperations.delete("map:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getPosition());
-    // }
-
-    // private void queueChange(UserMatchDto userMatchDto) {
-    //     HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-
-    //     LocalDateTime time = LocalDateTime.now();
-
-    //     String nowTime = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-    //     String queueName = "";
-    //     System.out.println("시간 : " + nowTime);
-
-    //     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    //     try {
-    //         Date nowDate = sdf.parse(nowTime);
-    //         Date originalDate = sdf.parse(userMatchDto.getQueueName().split("_")[3]);
-
-    //         if(nowDate.after(originalDate)) {
-    //             System.out.println("리스트 및 hashMap 변경");
-    //             // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
-    //             String[] queueList = userMatchDto.getQueueName().split("_");
-    //             int min = Integer.parseInt(queueList[1]) > 150 ? Integer.parseInt(queueList[1]) - 5 : 100;
-    //             int max = Integer.parseInt(queueList[1]) + 5;
-    //             String uuid = UUID.randomUUID().toString();
-    //             queueName = userMatchDto.getRank()+"_"+min+"_"+max+"_"+"시간"+"_"+uuid;
-    //         }
-    //     } catch (ParseException e) {
-    //         e.printStackTrace();
-    //     }
-
-    // }
 }
