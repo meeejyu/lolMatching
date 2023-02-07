@@ -17,13 +17,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lol.match.main.model.GroupMatchDto;
-import com.lol.match.main.model.UserMatchDto;
+import com.lol.match.main.model.UserAllDto;
 import com.lol.match.main.service.MainService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,10 +41,10 @@ public class MainController {
 
 
     @PostMapping("/main")
-    public String main(UserMatchDto userMatchDto, Model model) {
+    public String main(UserAllDto userAllDto, Model model) {
 
-        System.out.println("회원정보 : "+ userMatchDto.toString());
-        model.addAttribute("userMatchDto", userMatchDto);
+        System.out.println("회원정보 : "+ userAllDto.toString());
+        model.addAttribute("userAllDto", userAllDto);
 
         return "main";
     }
@@ -53,9 +54,9 @@ public class MainController {
     // db 접속 정보를 가저와서 세팅하는걸로 수정
     @PostMapping("/match")
     @ResponseBody
-    public HashMap<String, String> match(UserMatchDto userMatchDto) throws Exception {
+    public HashMap<String, String> match(@RequestParam int userId) throws Exception {
 
-        HashMap<String, String> result = mainService.match(userMatchDto);
+        HashMap<String, String> result = mainService.match(userId);
 
         return result;
     }
@@ -63,9 +64,9 @@ public class MainController {
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : queue에서 해당 유저 정보 삭제
     @PostMapping("/queue/cancel")
     @ResponseBody
-    public HashMap<String, String> queueListDelete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException {
+    public HashMap<String, String> queueListDelete(@RequestParam int userId, String position) throws JsonMappingException, JsonProcessingException {
 
-        HashMap<String, String> result = mainService.queueListDelete(userMatchDto);
+        HashMap<String, String> result = mainService.queueListDelete(userId, position);
 
         return result;
     }
@@ -73,10 +74,10 @@ public class MainController {
     // 대전 매칭 완료 된 이후 수락하기 
     @PostMapping("/match/accept")
     @ResponseBody
-    public HashMap<String, String> matchAccept(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public HashMap<String, String> matchAccept(@RequestParam int userId, String position, String queueName) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
-        HashMap<String, String> result = mainService.matchAccept(userMatchDto);
-        
+        HashMap<String, String> result = mainService.matchAccept(userId, position, queueName);
+
         return result;
     }
 
@@ -84,9 +85,9 @@ public class MainController {
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
     @PostMapping("/match/complete")
     @ResponseBody
-    public GroupMatchDto matchComplete(UserMatchDto userMatchDto) throws Exception {
+    public GroupMatchDto matchComplete(@RequestParam int userId, String position, String queueName) throws Exception {
         
-        GroupMatchDto groupMatchDto = mainService.matchComplete(userMatchDto);
+        GroupMatchDto groupMatchDto = mainService.matchComplete(userId, position, queueName);
         
         return groupMatchDto;
 
@@ -107,9 +108,9 @@ public class MainController {
     // 대전 매칭 수락후 완료하기, 수락하기를 안누른 유저가 있으면 다시 대기열로 돌아가 queueList7에 첫번째로 넣어줌, 진행중
     // @GetMapping("/queueList/accept")
     // @ResponseBody
-    // public String queueListAccept(@RequestBody UserMatchDto userMatchDto) {
+    // public String queueListAccept(@RequestBody UserAllDto userAllDto) {
         
-    //     String result = mainService.queueListAccept(userMatchDto);
+    //     String result = mainService.queueListAccept(userAllDto);
         
     //     return result;
     // }
@@ -133,16 +134,16 @@ public class MainController {
 
     @GetMapping("/position")
     @ResponseBody
-    public String position(@RequestBody UserMatchDto userMatchDto) {
+    public String position(@RequestBody UserAllDto userAllDto) {
         // Set<String> keys = redisTemplate.keys("posts:*");
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
-        List<Object> list = hashOperations.values("map:"+userMatchDto.getQueueName());
+        List<Object> list = hashOperations.values("map:"+userAllDto.getQueueName());
 
         try {
             for (int i = 0; i < list.size(); i++) {
-                UserMatchDto user = objectMapper.readValue(list.get(i).toString(), UserMatchDto.class);
+                UserAllDto user = objectMapper.readValue(list.get(i).toString(), UserAllDto.class);
                 // hash를 사용해서 포지션 관리값 넣기
                 System.out.println(i+"번째 유저값 나와라 : "+ user.toString());
                 System.out.println(user.toString());   
@@ -156,21 +157,21 @@ public class MainController {
     
     @GetMapping("/write")
     @ResponseBody
-    public String write(@RequestBody UserMatchDto userMatchDto) {
+    public String write(@RequestBody UserAllDto userAllDto) {
 
         // TODO : 규칙대로 10씩 늘리는거 150이하일때 규칙 추가
-        int mmr = userMatchDto.getUserMmr();
+        int mmr = userAllDto.getUserMmr();
         int min = mmr > 150 ? mmr - 50 : 100;
         int max = mmr + 50;
 
-        String listname = userMatchDto.getUserRank() + "_" + min + "_" + max;
+        String listname = userAllDto.getUserRank() + "_" + min + "_" + max;
 
         // // String listname = "queue";
 
         // int time = 1;
         // GroupMatchDto groupMatchDto = new GroupMatchDto(listname, max, min, time);
 
-        // redisTemplate.opsForList().leftPush(listname, userMatchDto);
+        // redisTemplate.opsForList().leftPush(listname, userAllDto);
         // redisTemplate.opsForList().leftPush("queue", groupMatchDto);
 
         // RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
@@ -181,7 +182,7 @@ public class MainController {
         // try {
 
         //     for (int i = 0; i < a.size(); i++) {
-        //         UserMatchDto userMatchDto2 = objectMapper.readValue(a.get(0).toString(), UserMatchDto.class);
+        //         UserAllDto userMatchDto2 = objectMapper.readValue(a.get(0).toString(), UserAllDto.class);
         //         System.out.println("값 나와랏! : " + userMatchDto2.toString());
         //     }
 

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.GroupMatchDto;
 import com.lol.match.main.model.SettingDto;
-import com.lol.match.main.model.UserMatchDto;
+import com.lol.match.main.model.UserAllDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,40 +37,64 @@ public class MainService {
 
     private final ObjectMapper objectMapper;
  
-    public HashMap<String, String> match(UserMatchDto userMatchDto) throws Exception {
-        
-        HashMap<String, String> result = new HashMap<>();
-        int mmr = userMatchDto.getUserMmr();
-        boolean condition = true;
-        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
+    public HashMap<String, String> match(int userId) throws Exception {
 
         // DB로 세팅 정보 가져오기
         SettingDto settingDto = mainMapper.findBySettingId();
 
         // mmr만 고려하여 매칭 시켜주는 경우
+        // mmrIsMap(userAllDto);
 
-        // mmr,rank, position 고려하여 매칭 시켜주는 경우
+        // mmr, rank, position 고려하여 매칭 시켜주는 경우
+        return allIsMap(userId);
+
         // mmr, rank 매칭 시켜주는 경우
+        // rankIsMap(userAllDto);
+
         // mmr, position 고려하여 매칭 시켜주는 경우
-        
+        // positionIsMap(userAllDto);
+
         // 두번 요청했을 경우, 예외
-        if(hashOperations.hasKey("queueAll", userMatchDto.getUserId())) {
+        
+    }
+
+    private void positionIsMap(UserAllDto userAllDto) {
+    }
+
+    private void rankIsMap(UserAllDto userAllDto) {
+    }
+
+    private void mmrIsMap(UserAllDto userAllDto) {
+    }
+
+    private HashMap<String, String> allIsMap(int userId) throws Exception {
+        HashMap<String, String> result = new HashMap<>();
+        boolean condition = true;
+        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
+        
+        UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
+
+        int mmr = userAllDto.getUserMmr();
+
+        String id = Integer.toString(userId);
+
+        if(hashOperations.hasKey("queueAll", id)) {
             result.put("code", "fail");
             result.put("message", "잘못된 요청입니다.");
         }
         else {
-            String listName = isMap(mmr, userMatchDto.getUserRank(), userMatchDto);
+            String listName = isMap(mmr, userAllDto);
 
             System.out.println("listName : " + listName);
 
-            hashOperations.put("queueAll", userMatchDto.getUserId(), listName);
+            hashOperations.put("queueAll", id, listName);
 
             // map size가 10보다 작을때는 계속 머무르기
             if(hashOperations.size("map:"+listName) < 10) {
                 condition = false;
 
                 // 중도 취소 여부 확인
-                String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto);
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, userAllDto);
                 if(status.equals("cancel")) {
                     result.put("code", "cancel");
                     return result;
@@ -103,32 +127,33 @@ public class MainService {
         hashOperations.put("acceptTime", listName, saveTime);
     }
 
-    // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우
-    public HashMap<String, String> queueListDelete(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException {
+    // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : ALL
+    public HashMap<String, String> queueListDelete(int userId, String position) throws JsonMappingException, JsonProcessingException {
 
         HashMap<String, String> result = new HashMap<>();
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        if(hashOperations.hasKey("queueAll", userMatchDto.getUserId())) {
-            Object key = hashOperations.get("queueAll", userMatchDto.getUserId());
+        String id = Integer.toString(userId);
+        if(hashOperations.hasKey("queueAll", id)) {
+            Object key = hashOperations.get("queueAll", id);
 
             System.out.println(key.toString());
     
             // 전체 키에서 삭제
-            hashOperations.delete("queueAll", userMatchDto.getUserId());
+            hashOperations.delete("queueAll", id);
 
             // 잡은 큐에서 삭제
-            hashOperations.delete("map:"+key.toString(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition());
+            hashOperations.delete("map:"+key.toString(), id+"_"+position);
     
             // 포지션 수 줄임
-            Object position = hashOperations.get("position:"+key.toString(), userMatchDto.getUserPosition());
+            Object userInfo = hashOperations.get("position:"+key.toString(), position);
     
-            if(Integer.parseInt(position.toString())==1) {
-                hashOperations.delete("position:"+key.toString(), userMatchDto.getUserPosition());
+            if(Integer.parseInt(userInfo.toString())==1) {
+                hashOperations.delete("position:"+key.toString(), position);
             }
-            else if(Integer.parseInt(position.toString())==2) {
-                hashOperations.put("position:"+key.toString(), userMatchDto.getUserPosition(), "1");
+            else if(Integer.parseInt(userInfo.toString())==2) {
+                hashOperations.put("position:"+key.toString(), userInfo, "1");
             }
         
             result.put("code", "success");
@@ -142,38 +167,37 @@ public class MainService {
     }
     
     // 대전 매칭 완료하기 
-    public HashMap<String, String> matchAccept(UserMatchDto userMatchDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public HashMap<String, String> matchAccept(int userId, String position, String queueName) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
         // TODO : 시간 추가, 재귀 메소드 수정 -> 추가
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        String user = objectMapper.writeValueAsString(userMatchDto);
+
         boolean condition = true;
         
-        String listName = userMatchDto.getQueueName();
-        
         // 두번 요청했을때 예외 처리
-        if(hashOperations.hasKey("accept:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())==true) {
+        if(hashOperations.hasKey("accept:"+queueName, userId+"_"+position)==true) {
             result.put("code", "fail");
             result.put("message", "중복된 요청입니다.");
             return result;
         }
 
         // 계속 돌기
-        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())==false) {
+        if(hashOperations.hasKey("map:"+queueName, userId+"_"+position)==false) {
             log.info("잘못된 요청입니다.");
             result.put("code", "fail");
             return result;
         }
         else {
-            hashOperations.put("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition(), user);
+            String userAll = hashOperations.get("map"+queueName, Integer.toString(userId)).toString();
+            hashOperations.put("accept:"+queueName, userId+"_"+position, userAll);
             
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
 
             Date date = new Date();
             System.out.println("date : "+date);
     
-            Object object = hashOperations.get("acceptTime", listName);
+            Object object = hashOperations.get("acceptTime", queueName);
     
             Date saveDate = simpleDateFormat.parse(object.toString());
             
@@ -187,25 +211,25 @@ public class MainService {
                 if(saveDate.after(newDate)==false) {
                     break;
                 }
-                if(hashOperations.size("accept:"+userMatchDto.getQueueName())<10) {
+                if(hashOperations.size("accept:"+queueName)<10) {
                     condition = false;
                     continue;
                 }
                 // 10초가 안지났지만 사이즈가 10되면 미리 바로 탈출
-                if(hashOperations.size("accept:"+userMatchDto.getQueueName())==10) {
+                if(hashOperations.size("accept:"+queueName)==10) {
                     result.put("code", "success");
-                    result.put("listname", listName);
+                    result.put("listname", queueName);
                     if(condition) {
-                        teamDivide(listName);
+                        teamDivide(queueName);
                         // 팀 정보 제외 전체 삭제
-                        delete(listName);                        
+                        // delete(listName);                        
                     }
                     return result;
                 }
             }
             // 시간안에 모두 동의하지 않은 경우
             result.put("code", "fail");
-            hashOperations.delete("accept:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition());
+            hashOperations.delete("accept:"+queueName, userId+"_"+position);
             return result;
         }
 
@@ -236,7 +260,7 @@ public class MainService {
 
         // postion이랑 mmr 얻어와서 비교하기
         for(Object key : map.keySet() ){
-            UserMatchDto user = objectMapper.readValue(map.get(key).toString(), UserMatchDto.class);
+            UserAllDto user = objectMapper.readValue(map.get(key).toString(), UserAllDto.class);
             if(key.toString().contains("top")) {
                 topMap.put(key, user.getUserMmr());
                 topList.add(key);
@@ -362,23 +386,23 @@ public class MainService {
     }
 
     // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
-    public GroupMatchDto matchComplete(UserMatchDto userMatchDto) throws Exception {
+    public GroupMatchDto matchComplete(int userId, String position, String queueName) throws Exception {
         
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        
+
         String userInfo;
 
-        if(hashOperations.hasKey("teamA:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())) {
+        if(hashOperations.hasKey("teamA:"+queueName, userId+"_"+position)) {
             userInfo = "A";
         }
-        else if(hashOperations.hasKey("teamB:"+userMatchDto.getQueueName(), userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())){
+        else if(hashOperations.hasKey("teamB:"+queueName, userId+"_"+position)){
             userInfo = "B";
         }
         else {
             throw new Exception("잘못된 요청입니다");
         }
-        Map<Object, Object> teamAMap = hashOperations.entries("teamA:"+userMatchDto.getQueueName());
-        Map<Object, Object> teamBMap = hashOperations.entries("teamB:"+userMatchDto.getQueueName());
+        Map<Object, Object> teamAMap = hashOperations.entries("teamA:"+queueName);
+        Map<Object, Object> teamBMap = hashOperations.entries("teamB:"+queueName);
 
         GroupMatchDto groupMatchDto = new GroupMatchDto(userInfo, teamInfo(teamAMap), teamInfo(teamBMap));
         
@@ -387,14 +411,14 @@ public class MainService {
     }
 
     // 팀 정보 List 형태로 저장
-    private List<UserMatchDto> teamInfo(Map<Object, Object> teamMap) throws JsonMappingException, JsonProcessingException {
+    private List<UserAllDto> teamInfo(Map<Object, Object> teamMap) throws JsonMappingException, JsonProcessingException {
         int count = 0;
 
-        List<UserMatchDto> teamList = new ArrayList<>();
+        List<UserAllDto> teamList = new ArrayList<>();
 
         for(Object key : teamMap.keySet()) {
-            UserMatchDto userMatchDto = objectMapper.readValue(teamMap.get(key).toString(), UserMatchDto.class);
-            teamList.add(count, userMatchDto);
+            UserAllDto userAllDto = objectMapper.readValue(teamMap.get(key).toString(), UserAllDto.class);
+            teamList.add(count, userAllDto);
             count += 1;
         }
 
@@ -402,17 +426,17 @@ public class MainService {
     }
 
     // 매칭 진행 : 큐 사이즈 확인 10이면 재귀 메소드 탈출
-    private String queueCheck(Long size, String listName, UserMatchDto userMatchDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
+    private String queueCheck(Long size, String listName, UserAllDto userAllDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        if(hashOperations.hasKey("map:"+listName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition())==false) {
+        if(hashOperations.hasKey("map:"+listName, userAllDto.getUserId()+"_"+userAllDto.getUserPosition())==false) {
             return "cancel";
         }
         else {
             if(size < 10) {
                 System.out.println("와서 뱅글뱅글 도는중 : "+size);
                 Thread.sleep(1000);
-                String status = queueCheck(hashOperations.size("map:"+listName), listName, userMatchDto);
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, userAllDto);
                 if(status.equals("cancel")) {
                     return "cancel";
                 }
@@ -422,9 +446,11 @@ public class MainService {
     }
 
     // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
-    private String isMap(int mmr, String rank, UserMatchDto userMatchDto) throws Exception {
+    private String isMap(int mmr, UserAllDto userAllDto) throws Exception {
 
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+
+        String rank = userAllDto.getUserRank();
 
         String queueName = "";
         int min = mmr > 150 ? mmr - 50 : 100;
@@ -509,15 +535,15 @@ public class MainService {
         }
 
         if(positionList.size()>0) {
-            queueName = positionCheck(positionList, userMatchDto, min, max);
+            queueName = positionCheck(positionList, userAllDto, min, max);
         }
         else {
             // 일치하는 mmr이 없을 경우
             System.out.println("새롭게 큐를 추가함 ");
             String uuid = UUID.randomUUID().toString();
             queueName = rank+"_"+min+"_"+max+"_"+uuid;
-            queueCreate(queueName, userMatchDto);
-            hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "1");
+            queueCreate(queueName, userAllDto);
+            hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "1");
             redisTemplate.opsForList().rightPush("queueList", queueName);
 
         }
@@ -526,30 +552,32 @@ public class MainService {
     }
 
     // 큐 생성
-    private void queueCreate(String queueName, UserMatchDto userMatchDto) throws JsonProcessingException {
-        userMatchDto.queueNameSet(queueName);
+    private void queueCreate(String queueName, UserAllDto userAllDto) throws JsonProcessingException {
+        String id = Integer.toString(userAllDto.getUserId());
+        
+        userAllDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        String user = objectMapper.writeValueAsString(userMatchDto);
-        hashOperations.put("map:"+queueName, userMatchDto.getUserId()+"_"+userMatchDto.getUserPosition(), user);
+        String user = objectMapper.writeValueAsString(userAllDto);
+        hashOperations.put("map:"+queueName, id+"_"+userAllDto.getUserPosition(), user);
     }
 
     // 포지션 확인
-    private String positionCheck(List<String> positionList, UserMatchDto userMatchDto, int min, int max) throws JsonProcessingException {
+    private String positionCheck(List<String> positionList, UserAllDto userAllDto, int min, int max) throws JsonProcessingException {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String queueName = "";
 
         for (int i = 0; i < positionList.size(); i++) {
             // 포지션 조건 추가
-            if(hashOperations.hasKey("position:"+positionList.get(i), userMatchDto.getUserPosition())) {
-                if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), userMatchDto.getUserPosition()).toString())>1) {
+            if(hashOperations.hasKey("position:"+positionList.get(i), userAllDto.getUserPosition())) {
+                if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), userAllDto.getUserPosition()).toString())>1) {
                     if(i==positionList.size()-1) {
                         String uuid = UUID.randomUUID().toString();
-                        queueName = userMatchDto.getUserRank()+"_"+min+"_"+max+"_"+uuid;
-                        queueCreate(queueName, userMatchDto);
+                        queueName = userAllDto.getUserRank()+"_"+min+"_"+max+"_"+uuid;
+                        queueCreate(queueName, userAllDto);
                         System.out.println("일치하는 mmr이 있으나 포지션이 없음.");
                         System.out.println("큐 새로 생성");
-                        hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "1");
+                        hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "1");
                         redisTemplate.opsForList().rightPush("queueList", queueName);
                         System.out.println("큐 이름 테스트 : "+queueName);
                         return queueName;
@@ -563,17 +591,17 @@ public class MainService {
                 else {
                     // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 1인경우, 0인경우
                     queueName = positionList.get(i);
-                    queueCreate(queueName, userMatchDto);
+                    queueCreate(queueName, userAllDto);
                     System.out.println("큐 이름 테스트 : "+queueName);
-                    hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "2");
+                    hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "2");
                     return queueName;
                 }
             }
             else {
                 // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 0인경우, 없는 경우
                 queueName = positionList.get(i);
-                queueCreate(queueName, userMatchDto);
-                hashOperations.put("position:"+queueName, userMatchDto.getUserPosition(), "1");
+                queueCreate(queueName, userAllDto);
+                hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "1");
                 return queueName;
             }
         }

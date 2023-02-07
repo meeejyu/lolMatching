@@ -12,4 +12,19 @@
         WHERE ts.SETTING_ID = 1 
     </select>
 
+    <select id="findByAllUserId" resultType="com.lol.match.main.model.UserAllDto">
+        SELECT * FROM TB_USER_ALL tu
+        WHERE tu.USER_ID = #{userId}
+    </select>
+
+    <select id="findByPositionUserId" resultType="com.lol.match.main.model.UserPositionDto">
+        SELECT * FROM TB_USER_POSITION tu
+        WHERE tu.USER_ID = #{userId}
+    </select>
+
+    <select id="findByRankUserId" resultType="com.lol.match.main.model.UserRankDto">
+        SELECT * FROM TB_USER_RANK tu
+        WHERE tu.USER_ID = #{userId} 
+    </select>
+
 </mapper>

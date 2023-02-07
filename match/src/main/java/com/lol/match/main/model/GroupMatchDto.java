@@ -15,8 +15,8 @@ public class GroupMatchDto {
 
     private String userInfo;
 
-    private List<UserMatchDto> teamAList;
+    private List<UserAllDto> teamAList;
 
-    private List<UserMatchDto> teamBList;
+    private List<UserAllDto> teamBList;
 
 }
