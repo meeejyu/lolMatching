@@ -18,13 +18,19 @@
         WHERE tu.USER_ID = #{userId}
     </select>
 
-    <select id="findByRank">
-        SELECT * FROM TB_RANK
+    <select id="findByRank" resultType="com.lol.match.main.model.RankDto">
+        SELECT * FROM TB_RANK 
+        ORDER BY RANK_LEVEL
     </select>
 
-    <select id="findByPositionId">
-        SELECT * FROM TB_POSITION tp
-        WHERE tp.POSITION_ID = #{positionId} 
+    <select id="findByRankId" resultType="com.lol.match.main.model.RankDto">
+        SELECT * FROM TB_RANK 
+        WHERE RANK_ID = #{rankId} 
+    </select>
+
+    <select id="findByPositionId" resultType="com.lol.match.main.model.PositionDto">
+        SELECT * FROM TB_POSITION 
+        WHERE POSITION_ID = #{positionId} 
     </select>
 
 </mapper>

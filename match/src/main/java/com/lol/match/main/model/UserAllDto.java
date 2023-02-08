@@ -11,9 +11,9 @@ public class UserAllDto {
 
     private String userNickname;
 
-    private String userPosition;
+    private int rankId;
 
-    private String userRank;
+    private int positionId;
 
     private String queueName;
 

@@ -22,7 +22,8 @@ import com.lol.match.common.exception.BusinessLogicException;
 import com.lol.match.common.exception.ExceptionCode;
 import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.GroupMatchDto;
-import com.lol.match.main.model.SettingAllDto;
+import com.lol.match.main.model.RankDto;
+import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserAllDto;
 
 import lombok.RequiredArgsConstructor;
@@ -42,7 +43,7 @@ public class MainService {
     public HashMap<String, String> match(int userId) throws Exception {
 
         // DB로 세팅 정보 가져오기
-        SettingAllDto settingDto = mainMapper.findBySettingId();
+        SettingDto settingDto = mainMapper.findBySettingId();
 
         // mmr만 고려하여 매칭 시켜주는 경우
         // mmrIsMap(userAllDto);
@@ -69,7 +70,7 @@ public class MainService {
     private void mmrIsMap(UserAllDto userAllDto) {
     }
 
-    private HashMap<String, String> allIsMap(int userId, SettingAllDto settingDto) throws Exception {
+    private HashMap<String, String> allIsMap(int userId, SettingDto settingDto) throws Exception {
 
         HashMap<String, String> result = new HashMap<>();
         boolean condition = true;
@@ -142,7 +143,7 @@ public class MainService {
 
             UserAllDto user = objectMapper.readValue(hashOperations.get("map:"+key.toString(), id).toString(), UserAllDto.class);
 
-            String position = user.getUserPosition();
+            String position = mainMapper.findByPositionId(user.getPositionId()).getPositionName();
 
             // 전체 키에서 삭제
             hashOperations.delete("queueAll", id);
@@ -244,7 +245,9 @@ public class MainService {
                 for(Object key : userMap.keySet()) {
                     if(hashOperations.hasKey("accept:"+queueName, key)==false) {
                         UserAllDto userAllDto = objectMapper.readValue(hashOperations.get("map:"+queueName, key).toString(), UserAllDto.class);
-                        positionDelete(userAllDto.getUserPosition(), queueName);
+                        String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+                        
+                        positionDelete(position, queueName);
                         hashOperations.delete("map:"+queueName, key);
                         hashOperations.delete("queueAll", key);
                     }
@@ -298,7 +301,8 @@ public class MainService {
         for(Object key : map.keySet() ){
             UserAllDto user = objectMapper.readValue(map.get(key).toString(), UserAllDto.class);
             int mmr = user.getUserMmr();
-            String position = user.getUserPosition();
+            String position = mainMapper.findByPositionId(user.getPositionId()).getPositionName();
+
             if(position.equals("top")) {
                 topMap.put(key, mmr);
                 topList.add(key);
@@ -486,11 +490,12 @@ public class MainService {
     }
 
     // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
-    private String isMap(int mmr, UserAllDto userAllDto, SettingAllDto settingDto) throws Exception {
+    private String isMap(int mmr, UserAllDto userAllDto, SettingDto settingDto) throws Exception {
 
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
 
-        String rank = userAllDto.getUserRank();
+        RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
+        String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
 
         String queueName = "";
         int min = mmr > 150 ? mmr - 50 : 100;
@@ -499,48 +504,8 @@ public class MainService {
         List<String> rankList = new ArrayList<>();
 
         // 랭크 계급 설정
-        rankList = rankListAdd(rank, settingDto);
+        rankList = rankListAdd(rankdto);
         
-        // 랭킹에 따른 배치
-        if (rank.equals("Iron") || rank.equals("Bronze")) {
-            rankList.add("Iron");
-            rankList.add("Bronze");
-            rankList.add("Silver");
-        } else if (rank.equals("Silver")) {
-            rankList.add("Iron");
-            rankList.add("Bronze");
-            rankList.add("Silver");
-            rankList.add("Gold");
-        } else if (rank.equals("Gold")) {
-            rankList.add("Silver");
-            rankList.add("Gold");
-            rankList.add("Platinum");
-        } else if (rank.equals("Platinum")) {
-            rankList.add("Gold");
-            rankList.add("Platinum");
-            rankList.add("Emerald");
-        } else if (rank.equals("Emerald")) {
-            rankList.add("Platinum");
-            rankList.add("Emerald");
-            rankList.add("Diamond");
-        } else if (rank.equals("Diamond")) {
-            rankList.add("Emerald");
-            rankList.add("Diamond");
-            rankList.add("Master");
-        } else if (rank.equals("Master")) {
-            rankList.add("Diamond");
-            rankList.add("Master");
-            rankList.add("GrandMaster");
-        } else if (rank.equals("GrandMaster")) {
-            rankList.add("Master");
-            rankList.add("GrandMaster");
-        } else if (rank.equals("Challenger")) {
-            rankList.add("Challenger");
-        }
-        else {
-            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
-        }
-
         // Redis Data List 출력
         Long listSize = operations.opsForList().size("queueList");
         List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
@@ -584,9 +549,9 @@ public class MainService {
             // 일치하는 mmr이 없을 경우
             System.out.println("새롭게 큐를 추가함 ");
             String uuid = UUID.randomUUID().toString();
-            queueName = rank+"_"+min+"_"+max+"_"+uuid;
+            queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
             queueCreate(queueName, userAllDto);
-            hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "1");
+            hashOperations.put("position:"+queueName, position, "1");
             redisTemplate.opsForList().rightPush("queueList", queueName);
 
         }
@@ -594,12 +559,26 @@ public class MainService {
         return queueName;
     }
 
-    private List<String> rankListAdd(String rank, SettingAllDto settingDto) {
+    private List<String> rankListAdd(RankDto rankDto) {
         
+        List<RankDto> rankDtoList = mainMapper.findByRank();
         
+        rankDtoList.get(0);
         List<String> rankList = new ArrayList<>();
-        
-        return null;
+
+        if(rankDto.getRankLevel()==1) {
+            rankList.add(rankDtoList.get(1).getRankName());
+        }
+        else if(rankDto.getRankLevel()==rankDtoList.size()) {
+            rankList.add(rankDtoList.get(8).getRankName());
+        }
+        else {
+            rankList.add(rankDtoList.get(rankDto.getRankLevel()-2).getRankName());
+            rankList.add(rankDtoList.get(rankDto.getRankLevel()).getRankName());
+        }
+        rankList.add(rankDto.getRankName());
+
+        return rankList;
     }
 
     // 큐 생성
@@ -615,20 +594,22 @@ public class MainService {
     // 포지션 확인
     private String positionCheck(List<String> positionList, UserAllDto userAllDto, int min, int max) throws JsonProcessingException {
 
+        String rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
+        String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String queueName = "";
 
         for (int i = 0; i < positionList.size(); i++) {
             // 포지션 조건 추가
-            if(hashOperations.hasKey("position:"+positionList.get(i), userAllDto.getUserPosition())) {
-                if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), userAllDto.getUserPosition()).toString())>1) {
+            if(hashOperations.hasKey("position:"+positionList.get(i), position)) {
+                if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), position).toString())>1) {
                     if(i==positionList.size()-1) {
                         String uuid = UUID.randomUUID().toString();
-                        queueName = userAllDto.getUserRank()+"_"+min+"_"+max+"_"+uuid;
+                        queueName = rank+"_"+min+"_"+max+"_"+uuid;
                         queueCreate(queueName, userAllDto);
                         System.out.println("일치하는 mmr이 있으나 포지션이 없음.");
                         System.out.println("큐 새로 생성");
-                        hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "1");
+                        hashOperations.put("position:"+queueName, position, "1");
                         redisTemplate.opsForList().rightPush("queueList", queueName);
                         System.out.println("큐 이름 테스트 : "+queueName);
                         return queueName;
@@ -644,7 +625,7 @@ public class MainService {
                     queueName = positionList.get(i);
                     queueCreate(queueName, userAllDto);
                     System.out.println("큐 이름 테스트 : "+queueName);
-                    hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "2");
+                    hashOperations.put("position:"+queueName, position, "2");
                     return queueName;
                 }
             }
@@ -652,7 +633,7 @@ public class MainService {
                 // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 0인경우, 없는 경우
                 queueName = positionList.get(i);
                 queueCreate(queueName, userAllDto);
-                hashOperations.put("position:"+queueName, userAllDto.getUserPosition(), "1");
+                hashOperations.put("position:"+queueName, position, "1");
                 return queueName;
             }
         }

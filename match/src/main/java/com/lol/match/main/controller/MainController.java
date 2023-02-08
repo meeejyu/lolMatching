@@ -2,11 +2,9 @@ package com.lol.match.main.controller;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisOperations;
@@ -164,7 +162,7 @@ public class MainController {
         int min = mmr > 150 ? mmr - 50 : 100;
         int max = mmr + 50;
 
-        String listname = userAllDto.getUserRank() + "_" + min + "_" + max;
+        // String listname = userAllDto.getUserRank() + "_" + min + "_" + max;
 
         // // String listname = "queue";
 

@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.lol.match.main.model.PositionDto;
 import com.lol.match.main.model.RankDto;
-import com.lol.match.main.model.SettingAllDto;
+import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserAllDto;
 import com.lol.match.main.model.UserPositionDto;
 import com.lol.match.main.model.UserRankDto;
@@ -15,7 +15,7 @@ import com.lol.match.main.model.UserRankDto;
 @Mapper
 public interface MainMapper {
 
-    SettingAllDto findBySettingId();
+    SettingDto findBySettingId();
 
     UserAllDto findByAllUserId(@Param("userId")int userId);
 
@@ -25,6 +25,7 @@ public interface MainMapper {
 
     List<RankDto> findByRank();
 
-    List<PositionDto> findByPositionId(@Param("positionId")int positionId);
+    PositionDto findByPositionId(@Param("positionId")int positionId);
 
+    RankDto findByRankId(@Param("rankId")int rankId);
 }

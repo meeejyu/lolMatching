@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-public class SettingAllDto {
+public class SettingDto {
     
     private int settingId;
 
@@ -17,8 +17,5 @@ public class SettingAllDto {
 
     // 수락 시간 : 초 단위, 0일 경우 수락시간 무제한
     private int settingTime;
-
-    // 범위 0 ~ 2
-    private int rankGap;
 
 }

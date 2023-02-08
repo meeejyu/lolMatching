@@ -11,6 +11,6 @@ public class RankDto {
 
     private String rankName;
 
-    private String rankLevel;
+    private int rankLevel;
 
 }
