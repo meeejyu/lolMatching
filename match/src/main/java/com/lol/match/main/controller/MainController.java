@@ -2,9 +2,11 @@ package com.lol.match.main.controller;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisOperations;
@@ -50,8 +52,7 @@ public class MainController {
     }
 
     // 매칭 하기
-    // TODO : TEST -> 완료
-    // db 접속 정보를 가저와서 세팅하는걸로 수정
+    //TODO db 접속 정보를 가저와서 세팅하는걸로 수정
     @PostMapping("/match")
     @ResponseBody
     public HashMap<String, String> match(@RequestParam int userId) throws Exception {
@@ -64,9 +65,9 @@ public class MainController {
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : queue에서 해당 유저 정보 삭제
     @PostMapping("/queue/cancel")
     @ResponseBody
-    public HashMap<String, String> queueListDelete(@RequestParam int userId, String position) throws JsonMappingException, JsonProcessingException {
+    public HashMap<String, String> queueListDelete(@RequestParam int userId) throws JsonMappingException, JsonProcessingException {
 
-        HashMap<String, String> result = mainService.queueListDelete(userId, position);
+        HashMap<String, String> result = mainService.queueListDelete(userId);
 
         return result;
     }
@@ -74,20 +75,19 @@ public class MainController {
     // 대전 매칭 완료 된 이후 수락하기 
     @PostMapping("/match/accept")
     @ResponseBody
-    public HashMap<String, String> matchAccept(@RequestParam int userId, String position, String queueName) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public HashMap<String, String> matchAccept(@RequestParam int userId) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
-        HashMap<String, String> result = mainService.matchAccept(userId, position, queueName);
+        HashMap<String, String> result = mainService.matchAccept(userId);
 
         return result;
     }
 
-    // TODO : TEST -> 완료
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
     @PostMapping("/match/complete")
     @ResponseBody
-    public GroupMatchDto matchComplete(@RequestParam int userId, String position, String queueName) throws Exception {
+    public GroupMatchDto matchComplete(@RequestParam int userId, String queueName) throws Exception {
         
-        GroupMatchDto groupMatchDto = mainService.matchComplete(userId, position, queueName);
+        GroupMatchDto groupMatchDto = mainService.matchComplete(userId, queueName);
         
         return groupMatchDto;
 

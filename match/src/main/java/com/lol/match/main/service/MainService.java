@@ -128,7 +128,7 @@ public class MainService {
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : ALL
-    public HashMap<String, String> queueListDelete(int userId, String position) throws JsonMappingException, JsonProcessingException {
+    public HashMap<String, String> queueListDelete(int userId) throws JsonMappingException, JsonProcessingException {
 
         HashMap<String, String> result = new HashMap<>();
 
@@ -138,22 +138,24 @@ public class MainService {
         if(hashOperations.hasKey("queueAll", id)) {
             Object key = hashOperations.get("queueAll", id);
 
-            System.out.println(key.toString());
-    
+            UserAllDto user = objectMapper.readValue(hashOperations.get("map:"+key.toString(), id).toString(), UserAllDto.class);
+
+            String position = user.getUserPosition();
+
             // 전체 키에서 삭제
             hashOperations.delete("queueAll", id);
 
             // 잡은 큐에서 삭제
-            hashOperations.delete("map:"+key.toString(), id+"_"+position);
+            hashOperations.delete("map:"+key.toString(), id);
     
             // 포지션 수 줄임
-            Object userInfo = hashOperations.get("position:"+key.toString(), position);
+            Object userPosition = hashOperations.get("position:"+key.toString(), position);
     
-            if(Integer.parseInt(userInfo.toString())==1) {
+            if(Integer.parseInt(userPosition.toString())==1) {
                 hashOperations.delete("position:"+key.toString(), position);
             }
-            else if(Integer.parseInt(userInfo.toString())==2) {
-                hashOperations.put("position:"+key.toString(), userInfo, "1");
+            else if(Integer.parseInt(userPosition.toString())==2) {
+                hashOperations.put("position:"+key.toString(), userPosition, "1");
             }
         
             result.put("code", "success");
@@ -167,30 +169,33 @@ public class MainService {
     }
     
     // 대전 매칭 완료하기 
-    public HashMap<String, String> matchAccept(int userId, String position, String queueName) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public HashMap<String, String> matchAccept(int userId) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         
         // TODO : 시간 추가, 재귀 메소드 수정 -> 추가
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
         boolean condition = true;
-        
-        // 두번 요청했을때 예외 처리
-        if(hashOperations.hasKey("accept:"+queueName, userId+"_"+position)==true) {
-            result.put("code", "fail");
-            result.put("message", "중복된 요청입니다.");
-            return result;
-        }
 
-        // 계속 돌기
-        if(hashOperations.hasKey("map:"+queueName, userId+"_"+position)==false) {
+        String id = Integer.toString(userId);
+        
+        // 요청 검증
+        if(hashOperations.hasKey("queueAll", id)==false) {
             log.info("잘못된 요청입니다.");
             result.put("code", "fail");
             return result;
         }
+        String queueName = hashOperations.get("queueAll", id).toString();
+
+        // 두번 요청했을때 예외 처리
+        if(hashOperations.hasKey("accept:"+queueName, id)==true) {
+            result.put("code", "fail");
+            result.put("message", "중복된 요청입니다.");
+            return result;
+        }
         else {
-            String userAll = hashOperations.get("map"+queueName, Integer.toString(userId)).toString();
-            hashOperations.put("accept:"+queueName, userId+"_"+position, userAll);
+            String userAll = hashOperations.get("map:"+queueName, id).toString();
+            hashOperations.put("accept:"+queueName, id, userAll);
             
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
 
@@ -229,10 +234,9 @@ public class MainService {
             }
             // 시간안에 모두 동의하지 않은 경우
             result.put("code", "fail");
-            hashOperations.delete("accept:"+queueName, userId+"_"+position);
+            hashOperations.delete("accept:"+queueName, id);
             return result;
         }
-
     }
 
     private void teamDivide(String listName) throws JsonMappingException, JsonProcessingException {
@@ -241,6 +245,7 @@ public class MainService {
 
         Map<Object, Object> map = hashOperations.entries("accept:"+listName);
 
+        // list는 키값만 저장, map은 키값이랑 mmr 저장
         Map<Object, Integer> topMap = new HashMap<>();
         List<Object> topList = new ArrayList<>();
 
@@ -261,24 +266,26 @@ public class MainService {
         // postion이랑 mmr 얻어와서 비교하기
         for(Object key : map.keySet() ){
             UserAllDto user = objectMapper.readValue(map.get(key).toString(), UserAllDto.class);
-            if(key.toString().contains("top")) {
-                topMap.put(key, user.getUserMmr());
+            int mmr = user.getUserMmr();
+            String position = user.getUserPosition();
+            if(position.equals("top")) {
+                topMap.put(key, mmr);
                 topList.add(key);
             }
-            else if(key.toString().contains("support")) {
-                supportMap.put(key, user.getUserMmr());
+            else if(position.equals("support")) {
+                supportMap.put(key, mmr);
                 supportList.add(key);
             }
-            else if(key.toString().contains("mid")) {
-                midMap.put(key, user.getUserMmr());
+            else if(position.equals("mid")) {
+                midMap.put(key, mmr);
                 midList.add(key);
             }
-            else if(key.toString().contains("jungle")) {
-                junglepMap.put(key, user.getUserMmr());
+            else if(position.equals("jungle")) {
+                junglepMap.put(key, mmr);
                 jungleList.add(key);
             }
-            else if(key.toString().contains("bottom")) {
-                bottomMap.put(key, user.getUserMmr());
+            else if(position.equals("bottom")) {
+                bottomMap.put(key, mmr);
                 bottomList.add(key);
             }
         }
@@ -386,16 +393,18 @@ public class MainService {
     }
 
     // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
-    public GroupMatchDto matchComplete(int userId, String position, String queueName) throws Exception {
+    public GroupMatchDto matchComplete(int userId, String queueName) throws Exception {
         
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
+        String id = Integer.toString(userId);
+
         String userInfo;
 
-        if(hashOperations.hasKey("teamA:"+queueName, userId+"_"+position)) {
+        if(hashOperations.hasKey("teamA:"+queueName, id)) {
             userInfo = "A";
         }
-        else if(hashOperations.hasKey("teamB:"+queueName, userId+"_"+position)){
+        else if(hashOperations.hasKey("teamB:"+queueName, id)){
             userInfo = "B";
         }
         else {
@@ -429,7 +438,7 @@ public class MainService {
     private String queueCheck(Long size, String listName, UserAllDto userAllDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        if(hashOperations.hasKey("map:"+listName, userAllDto.getUserId()+"_"+userAllDto.getUserPosition())==false) {
+        if(hashOperations.hasKey("map:"+listName, Integer.toString(userAllDto.getUserId()))==false) {
             return "cancel";
         }
         else {
@@ -558,7 +567,7 @@ public class MainService {
         userAllDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String user = objectMapper.writeValueAsString(userAllDto);
-        hashOperations.put("map:"+queueName, id+"_"+userAllDto.getUserPosition(), user);
+        hashOperations.put("map:"+queueName, id, user);
     }
 
     // 포지션 확인
