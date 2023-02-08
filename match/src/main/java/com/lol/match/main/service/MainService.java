@@ -190,18 +190,22 @@ public class MainService {
         if(hashOperations.hasKey("accept:"+queueName, id)==true) {
             throw new BusinessLogicException(ExceptionCode.DUPLICATION_REQUEST);
         }
+        Date date = new Date();
+        System.out.println("date : "+date);
+
+        Object object = hashOperations.get("acceptTime", queueName);
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+
+        Date saveDate = simpleDateFormat.parse(object.toString());
+
+        if(saveDate.after(date)==false) {
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
+        }
         else {
             String userAll = hashOperations.get("map:"+queueName, id).toString();
             hashOperations.put("accept:"+queueName, id, userAll);
-            
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
-
-            Date date = new Date();
-            System.out.println("date : "+date);
-    
-            Object object = hashOperations.get("acceptTime", queueName);
-    
-            Date saveDate = simpleDateFormat.parse(object.toString());
+            Long beforeSize = hashOperations.size("accept:"+queueName);
             
             while(saveDate.after(date)) {
                 
@@ -232,8 +236,37 @@ public class MainService {
             // 시간안에 모두 동의하지 않은 경우
             result.put("code", "fail");
             result.put("message", "수락하지 않은 유저가 있습니다. 다시 대기열로 돌아갑니다.");
-            hashOperations.delete("accept:"+queueName, id);
+            Long afterSize = hashOperations.size("accept:"+queueName);
+            if(beforeSize==afterSize) {
+
+                Map<Object, Object> userMap = hashOperations.entries("map:"+queueName);
+
+                for(Object key : userMap.keySet()) {
+                    if(hashOperations.hasKey("accept:"+queueName, key)==false) {
+                        UserAllDto userAllDto = objectMapper.readValue(hashOperations.get("map:"+queueName, key).toString(), UserAllDto.class);
+                        positionDelete(userAllDto.getUserPosition(), queueName);
+                        hashOperations.delete("map:"+queueName, key);
+                        hashOperations.delete("queueAll:"+queueName, key);
+                    }
+                }
+                hashOperations.getOperations().delete("accept:"+queueName);
+
+            }
+
             return result;
+        }
+    }
+
+    // 포지션 지우기
+    private void positionDelete(String userPosition, String queueName) {
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        Object object = hashOperations.get("position:"+queueName, userPosition);
+        
+        if(object.toString().equals("2")) {
+            hashOperations.put("position:"+queueName, userPosition, "1");
+        }
+        else {
+            hashOperations.delete("position:"+queueName, userPosition);
         }
     }
 
