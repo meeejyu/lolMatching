@@ -70,8 +70,6 @@ public class MainService {
 
         UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
 
-        RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
-
         int mmr = userAllDto.getUserMmr();
 
         String id = Integer.toString(userId);
@@ -89,22 +87,25 @@ public class MainService {
             List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
 
             for(Object key : queueList) {
-                String minRange = key.toString().split("_")[1];
-                String maxRange = key.toString().split("_")[2];
+                String minRange = key.toString().split("_")[0];
+                String maxRange = key.toString().split("_")[1];
     
                 if (Integer.parseInt(minRange) <= mmr) {
                     if (Integer.parseInt(maxRange) >= mmr) {
                         queueName = key.toString();
+                        queueCreate(queueName, userAllDto);
+                        break;
                     }
                 }           
             }
             if(queueName.equals("")) {
                 String uuid = UUID.randomUUID().toString();
-                queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
+                queueName = min+"_"+max+"_"+uuid;
                 queueCreate(queueName, userAllDto);
+                redisTemplate.opsForList().rightPush("queueList", queueName);
             }
 
-            result =  queueAddResult(id, queueName, userAllDto);
+            result = queueAddResult(id, queueName, userAllDto);
 
         }
         return result;
@@ -344,7 +345,7 @@ public class MainService {
                     if(condition) {
                         teamDivide(queueName);
                         // 팀 정보 제외 전체 삭제
-                        // delete(listName);                        
+                        // delete(queueName);                        
                     }
                     return result;
                 }
