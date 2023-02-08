@@ -22,7 +22,7 @@ import com.lol.match.common.exception.BusinessLogicException;
 import com.lol.match.common.exception.ExceptionCode;
 import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.GroupMatchDto;
-import com.lol.match.main.model.SettingDto;
+import com.lol.match.main.model.SettingAllDto;
 import com.lol.match.main.model.UserAllDto;
 
 import lombok.RequiredArgsConstructor;
@@ -42,13 +42,13 @@ public class MainService {
     public HashMap<String, String> match(int userId) throws Exception {
 
         // DB로 세팅 정보 가져오기
-        SettingDto settingDto = mainMapper.findBySettingId();
+        SettingAllDto settingDto = mainMapper.findBySettingId();
 
         // mmr만 고려하여 매칭 시켜주는 경우
         // mmrIsMap(userAllDto);
 
         // mmr, rank, position 고려하여 매칭 시켜주는 경우
-        return allIsMap(userId);
+        return allIsMap(userId, settingDto);
 
         // mmr, rank 매칭 시켜주는 경우
         // rankIsMap(userAllDto);
@@ -69,7 +69,7 @@ public class MainService {
     private void mmrIsMap(UserAllDto userAllDto) {
     }
 
-    private HashMap<String, String> allIsMap(int userId) throws Exception {
+    private HashMap<String, String> allIsMap(int userId, SettingAllDto settingDto) throws Exception {
 
         HashMap<String, String> result = new HashMap<>();
         boolean condition = true;
@@ -85,7 +85,7 @@ public class MainService {
             throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
         }
         else {
-            String listName = isMap(mmr, userAllDto);
+            String listName = isMap(mmr, userAllDto, settingDto);
 
             System.out.println("listName : " + listName);
 
@@ -246,7 +246,7 @@ public class MainService {
                         UserAllDto userAllDto = objectMapper.readValue(hashOperations.get("map:"+queueName, key).toString(), UserAllDto.class);
                         positionDelete(userAllDto.getUserPosition(), queueName);
                         hashOperations.delete("map:"+queueName, key);
-                        hashOperations.delete("queueAll:"+queueName, key);
+                        hashOperations.delete("queueAll", key);
                     }
                 }
                 hashOperations.getOperations().delete("accept:"+queueName);
@@ -486,7 +486,7 @@ public class MainService {
     }
 
     // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
-    private String isMap(int mmr, UserAllDto userAllDto) throws Exception {
+    private String isMap(int mmr, UserAllDto userAllDto, SettingAllDto settingDto) throws Exception {
 
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
 
@@ -498,6 +498,9 @@ public class MainService {
 
         List<String> rankList = new ArrayList<>();
 
+        // 랭크 계급 설정
+        rankList = rankListAdd(rank, settingDto);
+        
         // 랭킹에 따른 배치
         if (rank.equals("Iron") || rank.equals("Bronze")) {
             rankList.add("Iron");
@@ -589,6 +592,14 @@ public class MainService {
         }
 
         return queueName;
+    }
+
+    private List<String> rankListAdd(String rank, SettingAllDto settingDto) {
+        
+        
+        List<String> rankList = new ArrayList<>();
+        
+        return null;
     }
 
     // 큐 생성
