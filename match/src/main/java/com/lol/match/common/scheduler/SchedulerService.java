@@ -1,4 +1,4 @@
-package com.lol.match.common;
+package com.lol.match.common.scheduler;
 
 import java.util.List;
 

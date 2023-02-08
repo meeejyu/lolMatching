@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lol.match.common.exception.BusinessLogicException;
+import com.lol.match.common.exception.ExceptionCode;
 import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.GroupMatchDto;
 import com.lol.match.main.model.SettingDto;
@@ -68,6 +70,7 @@ public class MainService {
     }
 
     private HashMap<String, String> allIsMap(int userId) throws Exception {
+
         HashMap<String, String> result = new HashMap<>();
         boolean condition = true;
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
@@ -79,8 +82,7 @@ public class MainService {
         String id = Integer.toString(userId);
 
         if(hashOperations.hasKey("queueAll", id)) {
-            result.put("code", "fail");
-            result.put("message", "잘못된 요청입니다.");
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
         }
         else {
             String listName = isMap(mmr, userAllDto);
@@ -128,7 +130,7 @@ public class MainService {
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : ALL
-    public HashMap<String, String> queueListDelete(int userId) throws JsonMappingException, JsonProcessingException {
+    public HashMap<String, String> queueListDelete(int userId) throws Exception {
 
         HashMap<String, String> result = new HashMap<>();
 
@@ -161,15 +163,14 @@ public class MainService {
             result.put("code", "success");
         }
         else {
-            result.put("code", "fail");
-            result.put("message", "잘못된 요청입니다.");
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
         }
 
         return result;
     }
     
     // 대전 매칭 완료하기 
-    public HashMap<String, String> matchAccept(int userId) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public HashMap<String, String> matchAccept(int userId) throws Exception {
         
         // TODO : 시간 추가, 재귀 메소드 수정 -> 추가
         HashMap<String, String> result = new HashMap<>();
@@ -181,17 +182,13 @@ public class MainService {
         
         // 요청 검증
         if(hashOperations.hasKey("queueAll", id)==false) {
-            log.info("잘못된 요청입니다.");
-            result.put("code", "fail");
-            return result;
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
         }
         String queueName = hashOperations.get("queueAll", id).toString();
 
         // 두번 요청했을때 예외 처리
         if(hashOperations.hasKey("accept:"+queueName, id)==true) {
-            result.put("code", "fail");
-            result.put("message", "중복된 요청입니다.");
-            return result;
+            throw new BusinessLogicException(ExceptionCode.DUPLICATION_REQUEST);
         }
         else {
             String userAll = hashOperations.get("map:"+queueName, id).toString();
@@ -234,6 +231,7 @@ public class MainService {
             }
             // 시간안에 모두 동의하지 않은 경우
             result.put("code", "fail");
+            result.put("message", "수락하지 않은 유저가 있습니다. 다시 대기열로 돌아갑니다.");
             hashOperations.delete("accept:"+queueName, id);
             return result;
         }
@@ -408,7 +406,7 @@ public class MainService {
             userInfo = "B";
         }
         else {
-            throw new Exception("잘못된 요청입니다");
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
         }
         Map<Object, Object> teamAMap = hashOperations.entries("teamA:"+queueName);
         Map<Object, Object> teamBMap = hashOperations.entries("teamB:"+queueName);
@@ -504,7 +502,7 @@ public class MainService {
             rankList.add("Challenger");
         }
         else {
-            throw new Exception("잘못된 요청입니다");
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
         }
 
         // Redis Data List 출력

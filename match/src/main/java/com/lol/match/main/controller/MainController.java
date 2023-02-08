@@ -65,7 +65,7 @@ public class MainController {
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : queue에서 해당 유저 정보 삭제
     @PostMapping("/queue/cancel")
     @ResponseBody
-    public HashMap<String, String> queueListDelete(@RequestParam int userId) throws JsonMappingException, JsonProcessingException {
+    public HashMap<String, String> queueListDelete(@RequestParam int userId) throws Exception {
 
         HashMap<String, String> result = mainService.queueListDelete(userId);
 
@@ -75,7 +75,7 @@ public class MainController {
     // 대전 매칭 완료 된 이후 수락하기 
     @PostMapping("/match/accept")
     @ResponseBody
-    public HashMap<String, String> matchAccept(@RequestParam int userId) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    public HashMap<String, String> matchAccept(@RequestParam int userId) throws Exception {
         
         HashMap<String, String> result = mainService.matchAccept(userId);
 
