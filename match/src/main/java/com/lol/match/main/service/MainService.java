@@ -360,12 +360,16 @@ public class MainService {
 
                 for(Object key : userMap.keySet()) {
                     if(hashOperations.hasKey("accept:"+queueName, key)==false) {
-                        UserAllDto userAllDto = objectMapper.readValue(hashOperations.get("map:"+queueName, key).toString(), UserAllDto.class);
-                        String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
                         
-                        positionDelete(position, queueName);
-                        hashOperations.delete("map:"+queueName, key);
-                        hashOperations.delete("queueAll", key);
+                        // 공통으로 지우는 부분
+                        commonDelete(queueName, key);
+
+                        // 포지션 지우는 부분
+                        // UserAllDto userAllDto = objectMapper.readValue(hashOperations.get("map:"+queueName, key).toString(), UserAllDto.class);
+                        // String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+                        
+                        // positionDelete(position, queueName);
+
                     }
                 }
                 hashOperations.getOperations().delete("accept:"+queueName);
@@ -374,6 +378,16 @@ public class MainService {
 
             return result;
         }
+    }
+
+    // map, queueAll, acceptTime을 지운다
+    private void commonDelete(String queueName, Object key) {
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        hashOperations.delete("map:"+queueName, key);
+        hashOperations.delete("queueAll", key);
+        hashOperations.delete("acceptTime", queueName);
+
     }
 
     // 포지션 지우기
