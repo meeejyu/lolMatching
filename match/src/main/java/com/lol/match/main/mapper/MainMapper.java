@@ -25,7 +25,10 @@ public interface MainMapper {
 
     List<RankDto> findByRank();
 
+    RankDto findByRankId(@Param("rankId")int rankId);
+
+    List<PositionDto> findByPosition();
+
     PositionDto findByPositionId(@Param("positionId")int positionId);
 
-    RankDto findByRankId(@Param("rankId")int rankId);
 }

@@ -22,6 +22,7 @@ import com.lol.match.common.exception.BusinessLogicException;
 import com.lol.match.common.exception.ExceptionCode;
 import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.GroupMatchDto;
+import com.lol.match.main.model.PositionDto;
 import com.lol.match.main.model.RankDto;
 import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserAllDto;
@@ -105,25 +106,25 @@ public class MainService {
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
 
-            result = queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
+            result = queueAddResult(id, queueName, userAllDto, settingDto);
 
         }
         return result;
     }
 
-    private HashMap<String, String> queueAddResult(String id, String queueName, UserAllDto userAllDto, int time) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    private HashMap<String, String> queueAddResult(String id, String queueName, UserAllDto userAllDto, SettingDto settingDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         HashMap<String, String> result = new HashMap<>();
         boolean condition = true;
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
         hashOperations.put("queueAll", id, queueName);
 
-        // map size가 10보다 작을때는 계속 머무르기
-        if(hashOperations.size("map:"+queueName) < 10) {
+        // map size가 정원보다 작을때는 계속 머무르기
+        if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2)) {
             condition = false;
 
             // 중도 취소 여부 확인
-            String status = queueCheck(hashOperations.size("map:"+queueName), queueName, userAllDto);
+            String status = queueCheck(hashOperations.size("map:"+queueName), queueName, userAllDto, (settingDto.getSettingHeadcount()*2));
             if(status.equals("cancel")) {
                 result.put("code", "cancel");
                 return result;
@@ -133,7 +134,7 @@ public class MainService {
         result.put("listname", queueName);    
         if(condition) {
             // 매칭 동의 시간 추가
-            acceptTime(queueName, time);
+            acceptTime(queueName, settingDto.getSettingTime());
         }
 
         return result;
@@ -189,7 +190,7 @@ public class MainService {
                 hashOperations.put("position:"+queueName, position, "1");
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
-            result = queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
+            result = queueAddResult(id, queueName, userAllDto, settingDto);
         }
 
         return result;
@@ -231,7 +232,7 @@ public class MainService {
             // 랭크 필터링
             for (Object key : queueList) {
                 // 큐 사이즈 확인 
-                if(hashOperations.size("map:"+key.toString()) < 10 && hashOperations.size("map:"+key.toString()) > 0) {
+                if(hashOperations.size("map:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("map:"+key.toString()) > 0) {
                     String name = String.valueOf(key).split("_")[0];
                     for (int i = 0; i < rankList.size(); i++) {
                         if(name.equals(rankList.get(i))) {
@@ -262,7 +263,7 @@ public class MainService {
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
 
-            result = queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
+            result = queueAddResult(id, queueName, userAllDto, settingDto);
 
         }
         return result;
@@ -310,7 +311,7 @@ public class MainService {
             // 랭크 필터링
             for (Object key : queueList) {
                 // 큐 사이즈 확인 
-                if(hashOperations.size("map:"+key.toString()) < 10 && hashOperations.size("map:"+key.toString()) > 0) {
+                if(hashOperations.size("map:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("map:"+key.toString()) > 0) {
                     String name = String.valueOf(key).split("_")[0];
                     for (int i = 0; i < rankList.size(); i++) {
                         if(name.equals(rankList.get(i))) {
@@ -346,7 +347,7 @@ public class MainService {
     
             }
 
-            result =  queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
+            result =  queueAddResult(id, queueName, userAllDto, settingDto);
 
         }
         return result;
@@ -361,7 +362,7 @@ public class MainService {
         System.out.println("date : "+date);
         cal.setTime(date);
         cal.add(Calendar.SECOND, time);
-        System.out.println("date+10 : "+cal.getTime());
+        System.out.println("date+time : "+cal.getTime());
         String saveTime = simpleDateFormat.format(cal.getTime());
         System.out.println("saveTime : "+saveTime);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -412,11 +413,13 @@ public class MainService {
     // 대전 매칭 완료하기 
     public HashMap<String, String> matchAccept(int userId) throws Exception {
         
-        // TODO : 시간 추가, 재귀 메소드 수정 -> 추가
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
         boolean condition = true;
+
+        // DB로 세팅 정보 가져오기
+        SettingDto settingDto = mainMapper.findBySettingId();
 
         String id = Integer.toString(userId);
         
@@ -452,17 +455,17 @@ public class MainService {
                 Date newDate = new Date();
                 System.out.println("결과 : "+saveDate.after(newDate));
                 
-                // 10초가 지날때까지 사이즈 검토
+                // 설정한 시간이 지날때까지 사이즈 검토
                 if(saveDate.after(newDate)==false) {
                     condition = false;
                     break;
                 }
-                if(hashOperations.size("accept:"+queueName)<10) {
+                if(hashOperations.size("accept:"+queueName) < (settingDto.getSettingHeadcount()*2)) {
                     condition = false;
                     continue;
                 }
-                // 10초가 안지났지만 사이즈가 10되면 미리 바로 탈출
-                if(hashOperations.size("accept:"+queueName)==10) {
+                // 설정한 시간이 안지났지만 정원이 다 차면 미리 바로 탈출
+                if(hashOperations.size("accept:"+queueName) == (settingDto.getSettingHeadcount()*2)) {
                     result.put("code", "success");
                     result.put("listname", queueName);
                     if(condition) {
@@ -475,7 +478,7 @@ public class MainService {
                 Thread.sleep(1000);
             }
             System.out.println("size = "+hashOperations.size("accept:"+queueName));
-            if(hashOperations.size("accept:"+queueName)==10) {
+            if(hashOperations.size("accept:"+queueName) == (settingDto.getSettingHeadcount()*2)) {
                 result.put("code", "success");
                     result.put("listname", queueName);
                     if(condition) {
@@ -540,159 +543,7 @@ public class MainService {
         }
     }
 
-    private void teamDivide(String listName) throws JsonMappingException, JsonProcessingException {
-        // 키 값 돌려서 포지션 알아내서 비교하기
-        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        Map<Object, Object> map = hashOperations.entries("accept:"+listName);
-
-        // list는 키값만 저장, map은 키값이랑 mmr 저장
-        Map<Object, Integer> topMap = new HashMap<>();
-        List<Object> topList = new ArrayList<>();
-
-        Map<Object, Integer> junglepMap = new HashMap<>();
-        List<Object> jungleList = new ArrayList<>();
-
-        Map<Object, Integer> midMap = new HashMap<>();
-        List<Object> midList = new ArrayList<>();
-
-        Map<Object, Integer> bottomMap = new HashMap<>();
-        List<Object> bottomList = new ArrayList<>();
-
-        Map<Object, Integer> supportMap = new HashMap<>();
-        List<Object> supportList = new ArrayList<>();
-
-        Map<Integer, List<String>> teamCom = new HashMap<>();        
-
-        // postion이랑 mmr 얻어와서 비교하기
-        for(Object key : map.keySet() ){
-            UserAllDto user = objectMapper.readValue(map.get(key).toString(), UserAllDto.class);
-            int mmr = user.getUserMmr();
-            String position = mainMapper.findByPositionId(user.getPositionId()).getPositionName();
-
-            if(position.equals("top")) {
-                topMap.put(key, mmr);
-                topList.add(key);
-            }
-            else if(position.equals("support")) {
-                supportMap.put(key, mmr);
-                supportList.add(key);
-            }
-            else if(position.equals("mid")) {
-                midMap.put(key, mmr);
-                midList.add(key);
-            }
-            else if(position.equals("jungle")) {
-                junglepMap.put(key, mmr);
-                jungleList.add(key);
-            }
-            else if(position.equals("bottom")) {
-                bottomMap.put(key, mmr);
-                bottomList.add(key);
-            }
-        }
-
-        for (int i = 0; i < topMap.size(); i++) {
-            int topA = topMap.get(topList.get(i));
-            for (int j = 0; j < supportMap.size(); j++) {
-                int supportA = supportMap.get(supportList.get(j));    
-                for (int q = 0; q < midMap.size(); q++) {
-                    int midA = midMap.get(midList.get(q));    
-                    for (int e = 0; e < junglepMap.size(); e++) {
-                        int jungleA = junglepMap.get(jungleList.get(e));    
-                        for (int r = 0; r < bottomMap.size(); r++) {
-                            int bottomA = bottomMap.get(bottomList.get(r)); 
-                            int sumA = topA + supportA + midA + jungleA + bottomA;
-                            int topB = 0;
-                            int supportB = 0;
-                            int midB = 0;
-                            int jungleB = 0;
-                            int bottomB = 0;
-                            String aList = topList.get(i)+"/"+supportList.get(j)+"/"+midList.get(q)+"/"+jungleList.get(e)+"/"+bottomList.get(r);
-                            
-                            // 팀 B의 리스트 설정, 팀 A와 반대되는 유저 추가
-                            String bList = "";
-                            if(i==0) {
-                                topB = topMap.get(topList.get(1));
-                                bList += topList.get(1);
-                            }
-                            else if(i==1) {
-                                topB = topMap.get(topList.get(0));
-                                bList += topList.get(0);
-                            }
-                            if(j==0) {
-                                supportB = supportMap.get(supportList.get(1)); 
-                                bList += "/"+supportList.get(1);
-                            }
-                            else if(j==1) {
-                                supportB = supportMap.get(supportList.get(0)); 
-                                bList += "/"+supportList.get(0);
-                            }
-                            if(q==0) {
-                                midB = midMap.get(midList.get(1)); 
-                                bList += "/"+midList.get(1);
-                            }
-                            else if(q==1) {
-                                midB = midMap.get(midList.get(0)); 
-                                bList += "/"+midList.get(0);
-                            }
-                            if(e==0) {
-                                jungleB = junglepMap.get(jungleList.get(1));  
-                                bList += "/"+jungleList.get(1);
-                            }
-                            else if(e==1) {
-                                jungleB = junglepMap.get(jungleList.get(0));  
-                                bList += "/"+jungleList.get(0);
-                            }
-                            if(r==0) {
-                                bottomB = bottomMap.get(bottomList.get(1)); 
-                                bList += "/"+bottomList.get(1);
-                            }
-                            else if(r==1) {
-                                bottomB = bottomMap.get(bottomList.get(0)); 
-                                bList += "/"+bottomList.get(0);
-                            }
-                            int sumB = topB + supportB + midB + jungleB + bottomB;
-                            int sumDif = Math.abs(sumA - sumB);
-                            List<String> teamList = new ArrayList<>();
-                            
-                            teamList.add(aList);
-                            teamList.add(bList);
-                            if(sumDif==0) {
-                                teamCom.put(sumDif, teamList);
-                                break;
-                            }
-                            if(teamCom.size() > 0) {
-                                for(Integer key : teamCom.keySet() ){
-                                    if(key > sumDif) {
-                                        teamCom.remove(key);
-                                        teamCom.put(sumDif, teamList);
-                                    }
-                                }
-                            }
-                            if(teamCom.size() == 0) {
-                                teamCom.put(sumDif, teamList);
-                            }
-                        }
-                    }
-                }
-            }    
-        }
-        
-        String[] aList = {};
-        String[] bList = {};
-        for(Integer key : teamCom.keySet() ){
-            System.out.println("mmr 차이 : "+key);
-            aList = teamCom.get(key).get(0).split("/");
-            bList = teamCom.get(key).get(1).split("/");
-        }
-        for (int i = 0; i < 5; i++) {
-            Object objectA = hashOperations.get("accept:"+listName, aList[i]);
-            Object objectB = hashOperations.get("accept:"+listName, bList[i]);
-            hashOperations.put("teamA:"+listName, aList[i], objectA);
-            hashOperations.put("teamB:"+listName, bList[i], objectB);
-        }
-    }
 
     // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
     public GroupMatchDto matchComplete(int userId, String queueName) throws Exception {
@@ -736,18 +587,18 @@ public class MainService {
         return teamList;
     }
 
-    // 매칭 진행 : 큐 사이즈 확인 10이면 재귀 메소드 탈출
-    private String queueCheck(Long size, String listName, UserAllDto userAllDto) throws InterruptedException, JsonMappingException, JsonProcessingException {
+    // 매칭 진행 : 큐 사이즈 확인, 정원이 다 차면 재귀 메소드 탈출
+    private String queueCheck(Long size, String listName, UserAllDto userAllDto, int headCount) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
         if(hashOperations.hasKey("map:"+listName, Integer.toString(userAllDto.getUserId()))==false) {
             return "cancel";
         }
         else {
-            if(size < 10) {
+            if(size < headCount) {
                 System.out.println("와서 뱅글뱅글 도는중 : "+size);
                 Thread.sleep(1000);
-                String status = queueCheck(hashOperations.size("map:"+listName), listName, userAllDto);
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, userAllDto, headCount);
                 if(status.equals("cancel")) {
                     return "cancel";
                 }
@@ -755,75 +606,6 @@ public class MainService {
             return "ok";
         }
     }
-
-    // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
-    // private String isMap(int mmr, UserAllDto userAllDto, SettingDto settingDto) throws Exception {
-
-    //     RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
-
-    //     RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
-    //     String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
-
-    //     String queueName = "";
-    //     int range = settingDto.getSettingMmr();
-    //     int min = mmr - range > 0 ? mmr - range : 0;
-    //     int max = mmr + range;
-
-    //     List<String> rankList = new ArrayList<>();
-
-    //     // 랭크 계급 설정
-    //     rankList = rankListAdd(rankdto);
-        
-    //     // Redis Data List 출력
-    //     Long listSize = operations.opsForList().size("queueList");
-    //     List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
-
-    //     HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-
-    //     List<String> rankFilterList = new ArrayList<>();
-    //     List<String> positionList = new ArrayList<>();
-
-    //     // 랭크 필터링
-    //     for (Object key : queueList) {
-    //         // 큐 사이즈 확인 
-    //         if(hashOperations.size("map:"+key.toString()) < 10 && hashOperations.size("map:"+key.toString()) > 0) {
-    //             String name = String.valueOf(key).split("_")[0];
-    //             for (int i = 0; i < rankList.size(); i++) {
-    //                 if(name.equals(rankList.get(i))) {
-    //                     rankFilterList.add(key.toString());
-    //                 }
-    //             }
-    //         }
-    //     }    
-
-    //     // mmr 범위 조정
-    //     for(String fileterList : rankFilterList) {
-    //         String minRange = String.valueOf(fileterList).split("_")[1];
-    //         String maxRange = String.valueOf(fileterList).split("_")[2];
-
-    //         if (Integer.parseInt(minRange) <= mmr) {
-    //             if (Integer.parseInt(maxRange) >= mmr) {
-    //                 positionList.add(fileterList);
-    //             }
-    //         }           
-    //     }
-
-    //     if(positionList.size()>0) {
-    //         queueName = positionCheck(positionList, userAllDto, min, max);
-    //     }
-    //     else {
-    //         // 일치하는 mmr이 없을 경우
-    //         System.out.println("새롭게 큐를 추가함 ");
-    //         String uuid = UUID.randomUUID().toString();
-    //         queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
-    //         queueCreate(queueName, userAllDto);
-    //         hashOperations.put("position:"+queueName, position, "1");
-    //         redisTemplate.opsForList().rightPush("queueList", queueName);
-
-    //     }
-
-    //     return queueName;
-    // }
 
     private List<String> rankListAdd(RankDto rankDto) {
         
@@ -938,6 +720,114 @@ public class MainService {
             // 큐에 들어있는 사이즈만큼 다 지우면 바로 탈출
             if(count==size) {
                 break;
+            }
+        }
+    }
+
+    public void teamDivide(String queueName) throws JsonMappingException, JsonProcessingException {
+
+        // 키 값 돌려서 포지션 알아내서 비교하기
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        List<PositionDto> positionAllList = mainMapper.findByPosition();
+
+        Map<Object, Object> map = hashOperations.entries("accept:"+queueName);
+
+        List<List<UserAllDto>> userPositionList = new ArrayList<>(); 
+
+        // postion이랑 mmr 얻어와서 비교하기
+        for (int i = 0; i < positionAllList.size(); i++) {
+            for(Object key : map.keySet() ){
+                UserAllDto user = objectMapper.readValue(map.get(key).toString(), UserAllDto.class);
+                if(user.getPositionId()==positionAllList.get(i).getPositionId()) {
+                    if(userPositionList.size() > i) {
+                        userPositionList.get(i).add(user);
+                    }
+                    else {
+                        List<UserAllDto> positionList = new ArrayList<>();
+                        positionList.add(user);
+                        userPositionList.add(positionList);
+                    }
+                }
+            }
+        }    
+        int positionListSize = userPositionList.size();
+        List<UserAllDto> userInfoA = new ArrayList<>();
+        List<UserAllDto> userInfoB = new ArrayList<>();
+
+        HashMap<Integer, List<List<UserAllDto>>> teamResult = new HashMap<>();
+
+        // 포지션에 따른 조합
+        positionCombi(userInfoA, userInfoB, positionListSize-1, userPositionList, teamResult);
+
+        System.out.println("순조로운 진행~~");
+        for(Integer key : teamResult.keySet())
+        for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
+            UserAllDto userAllDtoA = teamResult.get(key).get(0).get(i);
+            UserAllDto userAllDtoB = teamResult.get(key).get(0).get(i);
+            hashOperations.put("teamA:"+queueName, Integer.toString(userAllDtoA.getUserId()), objectMapper.writeValueAsString(userAllDtoA));
+            hashOperations.put("teamB:"+queueName, Integer.toString(userAllDtoB.getUserId()), objectMapper.writeValueAsString(userAllDtoB));
+        }
+    }
+
+    private void positionCombi(List<UserAllDto> userInfoA, List<UserAllDto> userInfoB, int count, 
+        List<List<UserAllDto>> userPositionList, HashMap<Integer, List<List<UserAllDto>>> teamResult) {
+        
+        if(count < 0) {
+            int sumA = 0;
+            int sumB = 0;
+            for (int i = 0; i < userInfoA.size(); i++) {
+                sumA += userInfoA.get(i).getUserMmr();
+                sumB += userInfoB.get(i).getUserMmr();
+            }
+            int sumDif = Math.abs(sumA - sumB);
+            List<List<UserAllDto>> teamList = new ArrayList<>();
+            List<UserAllDto> userA = new ArrayList<>();
+            List<UserAllDto> userB = new ArrayList<>();
+           
+            for (int j = 0; j < userInfoA.size(); j++) {
+                userA.add(userInfoA.get(j));
+                userB.add(userInfoB.get(j));
+            }
+            teamList.add(userA);
+            teamList.add(userB);
+
+            if(sumDif==0) {
+                teamResult.put(sumDif, teamList);
+            }
+            if(teamResult.size() > 0) {
+                for(Integer key : teamResult.keySet() ){
+                    if(key > sumDif) {
+                        teamResult.remove(key);
+                        teamResult.put(sumDif, teamList);
+                    }
+                }
+            }
+            if(teamResult.size() == 0) {
+                teamResult.put(sumDif, teamList);
+            }
+            // for(Integer dif : teamResult.keySet()) {
+            //     System.out.println("최저값 : " + dif);
+            // }
+            userInfoA.clear();
+            userInfoB.clear();
+        }
+        else {
+            for (int i = 0; i < userPositionList.get(count).size(); i++) {
+                List<UserAllDto> userA = new ArrayList<>();
+                List<UserAllDto> userB = new ArrayList<>();
+                for (int j = 0; j < userInfoA.size(); j++) {
+                    userA.add(userInfoA.get(j));
+                    userB.add(userInfoB.get(j));
+                }
+                userA.add(userPositionList.get(count).get(i));
+                if(i==0) {
+                    userB.add(userPositionList.get(count).get(1));
+                }
+                else {
+                    userB.add(userPositionList.get(count).get(0));
+                }                
+                positionCombi(userA, userB, count-1, userPositionList, teamResult);
             }
         }
     }

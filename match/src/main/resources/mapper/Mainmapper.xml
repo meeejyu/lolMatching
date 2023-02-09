@@ -28,6 +28,10 @@
         WHERE RANK_ID = #{rankId} 
     </select>
 
+    <select id="findByPosition" resultType="com.lol.match.main.model.PositionDto">
+        SELECT * FROM TB_POSITION
+    </select>
+    
     <select id="findByPositionId" resultType="com.lol.match.main.model.PositionDto">
         SELECT * FROM TB_POSITION 
         WHERE POSITION_ID = #{positionId} 
