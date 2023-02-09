@@ -51,11 +51,11 @@ public class MainService {
         // mmr, rank, position 고려하여 매칭 시켜주는 경우 -> 완료
         // return allIsMap(userId, settingDto);
 
-        // mmr, rank 매칭 시켜주는 경우
-        return rankIsMap(userId, settingDto);
+        // mmr, rank 매칭 시켜주는 경우 -> 완료
+        // return rankIsMap(userId, settingDto);
 
         // mmr, position 고려하여 매칭 시켜주는 경우
-        // positionIsMap(userId, settingDto);
+        return positionIsMap(userId, settingDto);
 
         // 두번 요청했을 경우, 예외
         
@@ -105,13 +105,13 @@ public class MainService {
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
 
-            result = queueAddResult(id, queueName, userAllDto);
+            result = queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
 
         }
         return result;
     }
 
-    private HashMap<String, String> queueAddResult(String id, String queueName, UserAllDto userAllDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    private HashMap<String, String> queueAddResult(String id, String queueName, UserAllDto userAllDto, int time) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         HashMap<String, String> result = new HashMap<>();
         boolean condition = true;
 
@@ -133,14 +133,65 @@ public class MainService {
         result.put("listname", queueName);    
         if(condition) {
             // 매칭 동의 시간 추가
-            acceptTime(queueName);
+            acceptTime(queueName, time);
         }
 
         return result;
     }
 
-    private HashMap<String, String> positionIsMap(int userId, SettingDto settingDto) {
+    private HashMap<String, String> positionIsMap(int userId, SettingDto settingDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+
         HashMap<String, String> result = new HashMap<>();
+
+        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+
+        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
+
+        UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
+
+        int mmr = userAllDto.getUserMmr();
+
+        String id = Integer.toString(userId);
+
+        if(hashOperations.hasKey("queueAll", id)) {
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
+        }
+        else {
+            String queueName = "";
+            int range = settingDto.getSettingMmr();
+            int min = mmr - range > 0 ? mmr - range : 0;
+            int max = mmr + range;
+
+            String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+
+            List<String> positionList = new ArrayList<>();
+
+            Long listSize = operations.opsForList().size("queueList");
+            List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
+
+            for(Object key : queueList) {
+                String minRange = key.toString().split("_")[0];
+                String maxRange = key.toString().split("_")[1];
+    
+                if (Integer.parseInt(minRange) <= mmr) {
+                    if (Integer.parseInt(maxRange) >= mmr) {
+                        positionList.add(key.toString());
+                    }
+                }           
+            }
+            if(positionList.size()>0) {
+                queueName = positionCheck(positionList, userAllDto, min, max, false);
+            }
+            else {
+                String uuid = UUID.randomUUID().toString();
+                queueName = min+"_"+max+"_"+uuid;
+                queueCreate(queueName, userAllDto);
+                hashOperations.put("position:"+queueName, position, "1");
+                redisTemplate.opsForList().rightPush("queueList", queueName);
+            }
+            result = queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
+        }
+
         return result;
     }
 
@@ -211,7 +262,7 @@ public class MainService {
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
 
-            result = queueAddResult(id, queueName, userAllDto);
+            result = queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
 
         }
         return result;
@@ -282,7 +333,7 @@ public class MainService {
             }
     
             if(positionList.size()>0) {
-                queueName = positionCheck(positionList, userAllDto, min, max);
+                queueName = positionCheck(positionList, userAllDto, min, max, true);
             }
             else {
                 // 일치하는 mmr이 없을 경우
@@ -295,21 +346,21 @@ public class MainService {
     
             }
 
-            result =  queueAddResult(id, queueName, userAllDto);
+            result =  queueAddResult(id, queueName, userAllDto, settingDto.getSettingTime());
 
         }
         return result;
     }
 
     // 동의 시간 저장
-    private void acceptTime(String listName) throws ParseException {
+    private void acceptTime(String listName, int time) throws ParseException {
         
         Date date = new Date();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
         Calendar cal = Calendar.getInstance();
         System.out.println("date : "+date);
         cal.setTime(date);
-        cal.add(Calendar.SECOND, 10);
+        cal.add(Calendar.SECOND, time);
         System.out.println("date+10 : "+cal.getTime());
         String saveTime = simpleDateFormat.format(cal.getTime());
         System.out.println("saveTime : "+saveTime);
@@ -706,73 +757,73 @@ public class MainService {
     }
 
     // 큐가 이미 존재하는지, 새롭게 만들어야하는지 판단
-    private String isMap(int mmr, UserAllDto userAllDto, SettingDto settingDto) throws Exception {
+    // private String isMap(int mmr, UserAllDto userAllDto, SettingDto settingDto) throws Exception {
 
-        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+    //     RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
 
-        RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
-        String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+    //     RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
+    //     String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
 
-        String queueName = "";
-        int range = settingDto.getSettingMmr();
-        int min = mmr - range > 0 ? mmr - range : 0;
-        int max = mmr + range;
+    //     String queueName = "";
+    //     int range = settingDto.getSettingMmr();
+    //     int min = mmr - range > 0 ? mmr - range : 0;
+    //     int max = mmr + range;
 
-        List<String> rankList = new ArrayList<>();
+    //     List<String> rankList = new ArrayList<>();
 
-        // 랭크 계급 설정
-        rankList = rankListAdd(rankdto);
+    //     // 랭크 계급 설정
+    //     rankList = rankListAdd(rankdto);
         
-        // Redis Data List 출력
-        Long listSize = operations.opsForList().size("queueList");
-        List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
+    //     // Redis Data List 출력
+    //     Long listSize = operations.opsForList().size("queueList");
+    //     List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
 
-        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+    //     HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        List<String> rankFilterList = new ArrayList<>();
-        List<String> positionList = new ArrayList<>();
+    //     List<String> rankFilterList = new ArrayList<>();
+    //     List<String> positionList = new ArrayList<>();
 
-        // 랭크 필터링
-        for (Object key : queueList) {
-            // 큐 사이즈 확인 
-            if(hashOperations.size("map:"+key.toString()) < 10 && hashOperations.size("map:"+key.toString()) > 0) {
-                String name = String.valueOf(key).split("_")[0];
-                for (int i = 0; i < rankList.size(); i++) {
-                    if(name.equals(rankList.get(i))) {
-                        rankFilterList.add(key.toString());
-                    }
-                }
-            }
-        }    
+    //     // 랭크 필터링
+    //     for (Object key : queueList) {
+    //         // 큐 사이즈 확인 
+    //         if(hashOperations.size("map:"+key.toString()) < 10 && hashOperations.size("map:"+key.toString()) > 0) {
+    //             String name = String.valueOf(key).split("_")[0];
+    //             for (int i = 0; i < rankList.size(); i++) {
+    //                 if(name.equals(rankList.get(i))) {
+    //                     rankFilterList.add(key.toString());
+    //                 }
+    //             }
+    //         }
+    //     }    
 
-        // mmr 범위 조정
-        for(String fileterList : rankFilterList) {
-            String minRange = String.valueOf(fileterList).split("_")[1];
-            String maxRange = String.valueOf(fileterList).split("_")[2];
+    //     // mmr 범위 조정
+    //     for(String fileterList : rankFilterList) {
+    //         String minRange = String.valueOf(fileterList).split("_")[1];
+    //         String maxRange = String.valueOf(fileterList).split("_")[2];
 
-            if (Integer.parseInt(minRange) <= mmr) {
-                if (Integer.parseInt(maxRange) >= mmr) {
-                    positionList.add(fileterList);
-                }
-            }           
-        }
+    //         if (Integer.parseInt(minRange) <= mmr) {
+    //             if (Integer.parseInt(maxRange) >= mmr) {
+    //                 positionList.add(fileterList);
+    //             }
+    //         }           
+    //     }
 
-        if(positionList.size()>0) {
-            queueName = positionCheck(positionList, userAllDto, min, max);
-        }
-        else {
-            // 일치하는 mmr이 없을 경우
-            System.out.println("새롭게 큐를 추가함 ");
-            String uuid = UUID.randomUUID().toString();
-            queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
-            queueCreate(queueName, userAllDto);
-            hashOperations.put("position:"+queueName, position, "1");
-            redisTemplate.opsForList().rightPush("queueList", queueName);
+    //     if(positionList.size()>0) {
+    //         queueName = positionCheck(positionList, userAllDto, min, max);
+    //     }
+    //     else {
+    //         // 일치하는 mmr이 없을 경우
+    //         System.out.println("새롭게 큐를 추가함 ");
+    //         String uuid = UUID.randomUUID().toString();
+    //         queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
+    //         queueCreate(queueName, userAllDto);
+    //         hashOperations.put("position:"+queueName, position, "1");
+    //         redisTemplate.opsForList().rightPush("queueList", queueName);
 
-        }
+    //     }
 
-        return queueName;
-    }
+    //     return queueName;
+    // }
 
     private List<String> rankListAdd(RankDto rankDto) {
         
@@ -807,9 +858,12 @@ public class MainService {
     }
 
     // 포지션 확인
-    private String positionCheck(List<String> positionList, UserAllDto userAllDto, int min, int max) throws JsonProcessingException {
+    private String positionCheck(List<String> positionList, UserAllDto userAllDto, int min, int max, Boolean rankContain) throws JsonProcessingException {
 
-        String rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
+        String rank = "";
+        if(rankContain) {
+            rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
+        }
         String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String queueName = "";
@@ -820,7 +874,12 @@ public class MainService {
                 if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), position).toString())>1) {
                     if(i==positionList.size()-1) {
                         String uuid = UUID.randomUUID().toString();
-                        queueName = rank+"_"+min+"_"+max+"_"+uuid;
+                        if(rank.equals("")) {
+                            queueName = min+"_"+max+"_"+uuid;
+                        }
+                        else {
+                            queueName = rank+"_"+min+"_"+max+"_"+uuid;
+                        }
                         queueCreate(queueName, userAllDto);
                         System.out.println("일치하는 mmr이 있으나 포지션이 없어서 큐 새로 생성");
                         hashOperations.put("position:"+queueName, position, "1");
