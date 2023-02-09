@@ -45,17 +45,17 @@ public class MainService {
         // DB로 세팅 정보 가져오기
         SettingDto settingDto = mainMapper.findBySettingId();
 
-        // mmr만 고려하여 매칭 시켜주는 경우
-        return mmrIsMap(userId, settingDto);
+        // mmr만 고려하여 매칭 시켜주는 경우 -> 완료
+        // return mmrIsMap(userId, settingDto);
 
-        // mmr, rank, position 고려하여 매칭 시켜주는 경우
+        // mmr, rank, position 고려하여 매칭 시켜주는 경우 -> 완료
         // return allIsMap(userId, settingDto);
 
         // mmr, rank 매칭 시켜주는 경우
-        // rankIsMap(userAllDto);
+        return rankIsMap(userId, settingDto);
 
         // mmr, position 고려하여 매칭 시켜주는 경우
-        // positionIsMap(userAllDto);
+        // positionIsMap(userId, settingDto);
 
         // 두번 요청했을 경우, 예외
         
@@ -139,10 +139,82 @@ public class MainService {
         return result;
     }
 
-    private void positionIsMap(UserAllDto userAllDto) {
+    private HashMap<String, String> positionIsMap(int userId, SettingDto settingDto) {
+        HashMap<String, String> result = new HashMap<>();
+        return result;
     }
 
-    private void rankIsMap(UserAllDto userAllDto) {
+    private HashMap<String, String> rankIsMap(int userId, SettingDto settingDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+
+        HashMap<String, String> result = new HashMap<>();
+        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+
+        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
+
+        UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
+
+        int mmr = userAllDto.getUserMmr();
+
+        String id = Integer.toString(userId);
+
+        if(hashOperations.hasKey("queueAll", id)) {
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
+        }
+        else {
+            String queueName = "";
+            int range = settingDto.getSettingMmr();
+            int min = mmr - range > 0 ? mmr - range : 0;
+            int max = mmr + range;
+    
+            RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
+
+            List<String> rankList = new ArrayList<>();
+            List<String> rankFilterList = new ArrayList<>();
+    
+            // 랭크 계급 설정
+            rankList = rankListAdd(rankdto);
+
+            Long listSize = operations.opsForList().size("queueList");
+            List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
+
+            // 랭크 필터링
+            for (Object key : queueList) {
+                // 큐 사이즈 확인 
+                if(hashOperations.size("map:"+key.toString()) < 10 && hashOperations.size("map:"+key.toString()) > 0) {
+                    String name = String.valueOf(key).split("_")[0];
+                    for (int i = 0; i < rankList.size(); i++) {
+                        if(name.equals(rankList.get(i))) {
+                            rankFilterList.add(key.toString());
+                        }
+                    }
+                }
+            }    
+    
+            // mmr 범위 조정
+            for(String fileterList : rankFilterList) {
+                String minRange = String.valueOf(fileterList).split("_")[1];
+                String maxRange = String.valueOf(fileterList).split("_")[2];
+    
+                if (Integer.parseInt(minRange) <= mmr) {
+                    if (Integer.parseInt(maxRange) >= mmr) {
+                        queueName = fileterList;
+                        queueCreate(queueName, userAllDto);
+                        break;
+                    }
+                }           
+            }
+
+            if(queueName.equals("")) {
+                String uuid = UUID.randomUUID().toString();
+                queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
+                queueCreate(queueName, userAllDto);
+                redisTemplate.opsForList().rightPush("queueList", queueName);
+            }
+
+            result = queueAddResult(id, queueName, userAllDto);
+
+        }
+        return result;
     }
 
 
@@ -326,12 +398,12 @@ public class MainService {
             
             while(saveDate.after(date)) {
                 
-                Thread.sleep(1000);
                 Date newDate = new Date();
                 System.out.println("결과 : "+saveDate.after(newDate));
                 
                 // 10초가 지날때까지 사이즈 검토
                 if(saveDate.after(newDate)==false) {
+                    condition = false;
                     break;
                 }
                 if(hashOperations.size("accept:"+queueName)<10) {
@@ -349,6 +421,18 @@ public class MainService {
                     }
                     return result;
                 }
+                Thread.sleep(1000);
+            }
+            System.out.println("size = "+hashOperations.size("accept:"+queueName));
+            if(hashOperations.size("accept:"+queueName)==10) {
+                result.put("code", "success");
+                    result.put("listname", queueName);
+                    if(condition) {
+                        teamDivide(queueName);
+                        // 팀 정보 제외 전체 삭제
+                        // delete(queueName);                        
+                    }
+                return result;
             }
             // 시간안에 모두 동의하지 않은 경우
             result.put("code", "fail");
@@ -365,10 +449,7 @@ public class MainService {
                         commonDelete(queueName, key);
 
                         // 포지션 지우는 부분
-                        // UserAllDto userAllDto = objectMapper.readValue(hashOperations.get("map:"+queueName, key).toString(), UserAllDto.class);
-                        // String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
-                        
-                        // positionDelete(position, queueName);
+                        // positionDelete(queueName, key);
 
                     }
                 }
@@ -391,15 +472,20 @@ public class MainService {
     }
 
     // 포지션 지우기
-    private void positionDelete(String userPosition, String queueName) {
+    private void positionDelete(String queueName, Object key) throws JsonMappingException, JsonProcessingException {
+
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        Object object = hashOperations.get("position:"+queueName, userPosition);
+
+        UserAllDto userAllDto = objectMapper.readValue(hashOperations.get("map:"+queueName, key).toString(), UserAllDto.class);
+        String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+        
+        Object object = hashOperations.get("position:"+queueName, position);
         
         if(object.toString().equals("2")) {
-            hashOperations.put("position:"+queueName, userPosition, "1");
+            hashOperations.put("position:"+queueName, position, "1");
         }
         else {
-            hashOperations.delete("position:"+queueName, userPosition);
+            hashOperations.delete("position:"+queueName, position);
         }
     }
 
