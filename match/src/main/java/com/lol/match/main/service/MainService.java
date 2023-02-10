@@ -26,6 +26,9 @@ import com.lol.match.main.model.PositionDto;
 import com.lol.match.main.model.RankDto;
 import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserAllDto;
+import com.lol.match.main.model.UserMmrDto;
+import com.lol.match.main.model.UserPositionDto;
+import com.lol.match.main.model.UserRankDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,9 +72,9 @@ public class MainService {
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
-        UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
+        UserMmrDto userMmrDto = mainMapper.findByMmrUserId(userId);
 
-        int mmr = userAllDto.getUserMmr();
+        int mmr = userMmrDto.getUserMmr();
 
         String id = Integer.toString(userId);
 
@@ -94,7 +97,7 @@ public class MainService {
                 if (Integer.parseInt(minRange) <= mmr) {
                     if (Integer.parseInt(maxRange) >= mmr) {
                         queueName = key.toString();
-                        queueCreate(queueName, userAllDto);
+                        queueCreate(queueName, userMmrDto);
                         break;
                     }
                 }           
@@ -102,17 +105,17 @@ public class MainService {
             if(queueName.equals("")) {
                 String uuid = UUID.randomUUID().toString();
                 queueName = min+"_"+max+"_"+uuid;
-                queueCreate(queueName, userAllDto);
+                queueCreate(queueName, userMmrDto);
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
 
-            result = queueAddResult(id, queueName, userAllDto, settingDto);
+            result = queueAddResult(id, queueName, settingDto);
 
         }
         return result;
     }
 
-    private HashMap<String, String> queueAddResult(String id, String queueName, UserAllDto userAllDto, SettingDto settingDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
+    private HashMap<String, String> queueAddResult(String id, String queueName, SettingDto settingDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
         HashMap<String, String> result = new HashMap<>();
         boolean condition = true;
 
@@ -124,7 +127,7 @@ public class MainService {
             condition = false;
 
             // 중도 취소 여부 확인
-            String status = queueCheck(hashOperations.size("map:"+queueName), queueName, userAllDto, (settingDto.getSettingHeadcount()*2));
+            String status = queueCheck(hashOperations.size("map:"+queueName), queueName, id, (settingDto.getSettingHeadcount()*2));
             if(status.equals("cancel")) {
                 result.put("code", "cancel");
                 return result;
@@ -190,7 +193,7 @@ public class MainService {
                 hashOperations.put("position:"+queueName, position, "1");
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
-            result = queueAddResult(id, queueName, userAllDto, settingDto);
+            result = queueAddResult(id, queueName, settingDto);
         }
 
         return result;
@@ -263,7 +266,7 @@ public class MainService {
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
 
-            result = queueAddResult(id, queueName, userAllDto, settingDto);
+            result = queueAddResult(id, queueName, settingDto);
 
         }
         return result;
@@ -347,7 +350,7 @@ public class MainService {
     
             }
 
-            result =  queueAddResult(id, queueName, userAllDto, settingDto);
+            result =  queueAddResult(id, queueName, settingDto);
 
         }
         return result;
@@ -598,17 +601,17 @@ public class MainService {
     }
 
     // 매칭 진행 : 큐 사이즈 확인, 정원이 다 차면 재귀 메소드 탈출
-    private String queueCheck(Long size, String listName, UserAllDto userAllDto, int headCount) throws InterruptedException, JsonMappingException, JsonProcessingException {
+    private String queueCheck(Long size, String listName, String id, int headCount) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
-        if(hashOperations.hasKey("map:"+listName, Integer.toString(userAllDto.getUserId()))==false) {
+        if(hashOperations.hasKey("map:"+listName, id)==false) {
             return "cancel";
         }
         else {
             if(size < headCount) {
                 System.out.println("와서 뱅글뱅글 도는중 : "+size);
                 Thread.sleep(1000);
-                String status = queueCheck(hashOperations.size("map:"+listName), listName, userAllDto, headCount);
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, id, headCount);
                 if(status.equals("cancel")) {
                     return "cancel";
                 }
@@ -639,13 +642,43 @@ public class MainService {
         return rankList;
     }
 
-    // 큐 생성
+    // all 큐 생성
     private void queueCreate(String queueName, UserAllDto userAllDto) throws JsonProcessingException {
         String id = Integer.toString(userAllDto.getUserId());
         
         userAllDto.queueNameSet(queueName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String user = objectMapper.writeValueAsString(userAllDto);
+        hashOperations.put("map:"+queueName, id, user);
+    }
+
+    // mmr 큐 생성
+    private void queueCreate(String queueName, UserMmrDto userMmrDto) throws JsonProcessingException {
+        String id = Integer.toString(userMmrDto.getUserId());
+        
+        userMmrDto.queueNameSet(queueName);
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        String user = objectMapper.writeValueAsString(userMmrDto);
+        hashOperations.put("map:"+queueName, id, user);
+    }
+
+    // position 큐 생성
+    private void queueCreate(String queueName, UserPositionDto userPositionDto) throws JsonProcessingException {
+        String id = Integer.toString(userPositionDto.getUserId());
+        
+        userPositionDto.queueNameSet(queueName);
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        String user = objectMapper.writeValueAsString(userPositionDto);
+        hashOperations.put("map:"+queueName, id, user);
+    }
+
+    // rank 큐 생성
+    private void queueCreate(String queueName, UserRankDto userRankDto) throws JsonProcessingException {
+        String id = Integer.toString(userRankDto.getUserId());
+        
+        userRankDto.queueNameSet(queueName);
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        String user = objectMapper.writeValueAsString(userRankDto);
         hashOperations.put("map:"+queueName, id, user);
     }
 

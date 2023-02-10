@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class UserPositionDto {
 
-    private String userId;
+    private int userId;
 
     private int userMmr;
 

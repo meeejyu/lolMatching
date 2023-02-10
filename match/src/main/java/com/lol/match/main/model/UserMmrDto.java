@@ -3,15 +3,13 @@ package com.lol.match.main.model;
 import lombok.Data;
 
 @Data
-public class UserRankDto {
-
+public class UserMmrDto {
+    
     private int userId;
 
     private int userMmr;
 
     private String userNickname;
-
-    private String userRank;
 
     private String queueName;
 
@@ -19,5 +17,4 @@ public class UserRankDto {
     public void queueNameSet(String queueName) {
         this.queueName = queueName;
     }
-    
 }

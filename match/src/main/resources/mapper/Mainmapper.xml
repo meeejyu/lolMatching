@@ -13,6 +13,16 @@
         WHERE tu.USER_ID = #{userId}
     </select>
 
+    <select id="findByRankUserId" resultType="com.lol.match.main.model.UserRankDto">
+        SELECT * FROM TB_USER_RANK tu
+        WHERE tu.USER_ID = #{userId}
+    </select>
+
+    <select id="findByMmrUserId" resultType="com.lol.match.main.model.UserMmrDto">
+        SELECT * FROM TB_USER_MMR tu
+        WHERE tu.USER_ID = #{userId}
+    </select>
+
     <select id="findByPositionUserId" resultType="com.lol.match.main.model.UserPositionDto">
         SELECT * FROM TB_USER_POSITION tu
         WHERE tu.USER_ID = #{userId}
