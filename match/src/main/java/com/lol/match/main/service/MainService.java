@@ -47,7 +47,7 @@ public class MainService {
         SettingDto settingDto = mainMapper.findBySettingId();
 
         // mmr만 고려하여 매칭 시켜주는 경우 -> 완료
-        // return mmrIsMap(userId, settingDto);
+        return mmrIsMap(userId, settingDto);
 
         // mmr, rank, position 고려하여 매칭 시켜주는 경우 -> 완료
         // return allIsMap(userId, settingDto);
@@ -56,7 +56,7 @@ public class MainService {
         // return rankIsMap(userId, settingDto);
 
         // mmr, position 고려하여 매칭 시켜주는 경우
-        return positionIsMap(userId, settingDto);
+        // return positionIsMap(userId, settingDto);
 
         // 두번 요청했을 경우, 예외
         
@@ -469,9 +469,16 @@ public class MainService {
                     result.put("code", "success");
                     result.put("listname", queueName);
                     if(condition) {
-                        teamDivide(queueName);
+                        // mmrDivide
+                        if(settingDto.getSettingType().equals("mmr")) {
+                            mmrDivide(queueName, settingDto.getSettingHeadcount());
+                        }
+                        else {
+                            positionDivide(queueName);
+                        }
+
                         // 팀 정보 제외 전체 삭제
-                        // delete(queueName);                        
+                        delete(queueName, settingDto.getSettingType());                        
                     }
                     return result;
                 }
@@ -482,9 +489,14 @@ public class MainService {
                 result.put("code", "success");
                     result.put("listname", queueName);
                     if(condition) {
-                        teamDivide(queueName);
+                        if(settingDto.getSettingType().equals("mmr")) {
+                            mmrDivide(queueName, settingDto.getSettingHeadcount());
+                        }
+                        else {
+                            positionDivide(queueName);
+                        }
                         // 팀 정보 제외 전체 삭제
-                        // delete(queueName);                        
+                        delete(queueName, settingDto.getSettingType());                        
                     }
                 return result;
             }
@@ -499,12 +511,11 @@ public class MainService {
                 for(Object key : userMap.keySet()) {
                     if(hashOperations.hasKey("accept:"+queueName, key)==false) {
                         
+                        if(settingDto.getSettingType().equals("position")) {
+                            positionDelete(queueName, key);
+                        }
                         // 공통으로 지우는 부분
                         commonDelete(queueName, key);
-
-                        // 포지션 지우는 부분
-                        // positionDelete(queueName, key);
-
                     }
                 }
                 hashOperations.getOperations().delete("accept:"+queueName);
@@ -698,16 +709,19 @@ public class MainService {
     }
 
     // 큐를 지우기
-    public void delete(String listName) {
+    public void delete(String listName, String type) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
         int size = hashOperations.entries("map:"+listName).size();
 
         hashOperations.getOperations().delete("map:"+listName);        
-        hashOperations.getOperations().delete("position:"+listName);
         hashOperations.getOperations().delete("accept:"+listName);
         hashOperations.delete("acceptTime", listName);
+
+        if(type.equals("position")) {
+            hashOperations.getOperations().delete("position:"+listName);
+        }
 
         Map<Object, Object> allMap = hashOperations.entries("queueAll");
         int count = 0;
@@ -724,7 +738,100 @@ public class MainService {
         }
     }
 
-    public void teamDivide(String queueName) throws JsonMappingException, JsonProcessingException {
+    // mmr 팀 나누기 & 랭크 팀 나누기
+    public void mmrDivide(String queueName, int headCount) throws JsonMappingException, JsonProcessingException {
+
+        // 키 값 돌려서 포지션 알아내서 비교하기
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        Map<Object, Object> map = hashOperations.entries("accept:"+queueName);
+
+        List<UserAllDto> userListA = new ArrayList<>();
+
+        List<UserAllDto> userListB = new ArrayList<>();
+
+        // mmr 나누기
+        for(Object key : map.keySet() ){
+            UserAllDto user = objectMapper.readValue(map.get(key).toString(), UserAllDto.class);
+            userListA.add(user);
+        }
+
+        HashMap<Integer, List<List<UserAllDto>>> teamResult = new HashMap<>();
+
+        mmrCombi(teamResult, userListA, userListB, headCount);
+
+        System.out.println("순조로운 진행~~");
+        for(Integer key : teamResult.keySet()) {
+            for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
+                UserAllDto userAllDtoA = teamResult.get(key).get(0).get(i);
+                UserAllDto userAllDtoB = teamResult.get(key).get(1).get(i);
+                hashOperations.put("teamA:"+queueName, Integer.toString(userAllDtoA.getUserId()), objectMapper.writeValueAsString(userAllDtoA));
+                hashOperations.put("teamB:"+queueName, Integer.toString(userAllDtoB.getUserId()), objectMapper.writeValueAsString(userAllDtoB));
+            }
+            System.out.println("최종값 : " + key);
+        }
+    }
+
+    private void mmrCombi(HashMap<Integer, List<List<UserAllDto>>> teamResult, List<UserAllDto> userListA, List<UserAllDto> userListB, int count) {
+        
+        if(count == 0) {
+            int sumA = 0;
+            int sumB = 0;
+            List<UserAllDto> userA = new ArrayList<>();
+            List<UserAllDto> userB = new ArrayList<>();
+
+            for (int i = 0; i < userListA.size(); i++) {
+                sumA = userListA.get(i).getUserMmr();
+                sumB = userListB.get(i).getUserMmr();
+                userB.add(userListB.get(i));
+                userA.add(userListA.get(i));
+            }
+
+            int sumDif = Math.abs(sumA - sumB);
+            List<List<UserAllDto>> teamList = new ArrayList<>();
+           
+            teamList.add(userA);
+            teamList.add(userB);
+
+            System.out.println("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
+
+            if(sumDif==0) {
+                teamResult.put(sumDif, teamList);
+            }
+            if(teamResult.size() > 0) {
+                for(Integer key : teamResult.keySet() ){
+                    if(key > sumDif) {
+                        teamResult.remove(key);
+                        teamResult.put(sumDif, teamList);
+                    }
+                }
+            }
+            if(teamResult.size() == 0) {
+                teamResult.put(sumDif, teamList);
+            }
+        }
+        else {
+            for (int i = 0; i < userListA.size(); i++) {
+                List<UserAllDto> newUesrListA = new ArrayList<>();
+                List<UserAllDto> newUesrListB = new ArrayList<>();
+                for (int j = 0; j < userListB.size(); j++) {
+                    newUesrListB.add(userListB.get(j));
+                }
+                for (int j = 0; j < userListA.size(); j++) {
+                    if(i < j || i > j) {
+                        newUesrListA.add(userListA.get(j));
+                    }
+                    else {
+                        newUesrListB.add(userListA.get(i));
+                    }
+                }
+                mmrCombi(teamResult, newUesrListA, newUesrListB, count-1);
+            }
+        }
+    }
+
+    // 포지션 & 전체 팀 나누기
+    public void positionDivide(String queueName) throws JsonMappingException, JsonProcessingException {
 
         // 키 값 돌려서 포지션 알아내서 비교하기
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -764,7 +871,7 @@ public class MainService {
         for(Integer key : teamResult.keySet())
         for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
             UserAllDto userAllDtoA = teamResult.get(key).get(0).get(i);
-            UserAllDto userAllDtoB = teamResult.get(key).get(0).get(i);
+            UserAllDto userAllDtoB = teamResult.get(key).get(1).get(i);
             hashOperations.put("teamA:"+queueName, Integer.toString(userAllDtoA.getUserId()), objectMapper.writeValueAsString(userAllDtoA));
             hashOperations.put("teamB:"+queueName, Integer.toString(userAllDtoB.getUserId()), objectMapper.writeValueAsString(userAllDtoB));
         }
@@ -806,9 +913,6 @@ public class MainService {
             if(teamResult.size() == 0) {
                 teamResult.put(sumDif, teamList);
             }
-            // for(Integer dif : teamResult.keySet()) {
-            //     System.out.println("최저값 : " + dif);
-            // }
             userInfoA.clear();
             userInfoB.clear();
         }

@@ -18,4 +18,7 @@ public class SettingDto {
     // 수락 시간 : 초 단위, 0일 경우 수락시간 무제한
     private int settingTime;
 
+    // 팀 배정 타입
+    private String settingType;
+
 }
