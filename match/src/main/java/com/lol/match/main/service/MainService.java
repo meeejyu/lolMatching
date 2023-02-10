@@ -469,7 +469,6 @@ public class MainService {
                     result.put("code", "success");
                     result.put("listname", queueName);
                     if(condition) {
-                        // mmrDivide
                         if(settingDto.getSettingType().equals("mmr")) {
                             mmrDivide(queueName, settingDto.getSettingHeadcount());
                         }
@@ -478,7 +477,7 @@ public class MainService {
                         }
 
                         // 팀 정보 제외 전체 삭제
-                        delete(queueName, settingDto.getSettingType());                        
+                        delete(queueName);                        
                     }
                     return result;
                 }
@@ -496,7 +495,7 @@ public class MainService {
                             positionDivide(queueName);
                         }
                         // 팀 정보 제외 전체 삭제
-                        delete(queueName, settingDto.getSettingType());                        
+                        delete(queueName);                        
                     }
                 return result;
             }
@@ -709,9 +708,10 @@ public class MainService {
     }
 
     // 큐를 지우기
-    public void delete(String listName, String type) {
+    public void delete(String listName) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+        SettingDto settingDto = mainMapper.findBySettingId();
 
         int size = hashOperations.entries("map:"+listName).size();
 
@@ -719,7 +719,7 @@ public class MainService {
         hashOperations.getOperations().delete("accept:"+listName);
         hashOperations.delete("acceptTime", listName);
 
-        if(type.equals("position")) {
+        if(settingDto.getSettingType().equals("position")) {
             hashOperations.getOperations().delete("position:"+listName);
         }
 
@@ -793,7 +793,7 @@ public class MainService {
             teamList.add(userA);
             teamList.add(userB);
 
-            System.out.println("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
+            // System.out.println("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
 
             if(sumDif==0) {
                 teamResult.put(sumDif, teamList);
