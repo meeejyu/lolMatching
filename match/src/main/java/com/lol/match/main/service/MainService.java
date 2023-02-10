@@ -469,7 +469,7 @@ public class MainService {
                     result.put("code", "success");
                     result.put("listname", queueName);
                     if(condition) {
-                        if(settingDto.getSettingType().equals("mmr")) {
+                        if(settingDto.getSettingType().equals("mmr") || settingDto.getSettingType().equals("rank")) {
                             mmrDivide(queueName, settingDto.getSettingHeadcount());
                         }
                         else {
@@ -488,7 +488,7 @@ public class MainService {
                 result.put("code", "success");
                     result.put("listname", queueName);
                     if(condition) {
-                        if(settingDto.getSettingType().equals("mmr")) {
+                        if(settingDto.getSettingType().equals("mmr") || settingDto.getSettingType().equals("rank")) {
                             mmrDivide(queueName, settingDto.getSettingHeadcount());
                         }
                         else {
@@ -510,7 +510,7 @@ public class MainService {
                 for(Object key : userMap.keySet()) {
                     if(hashOperations.hasKey("accept:"+queueName, key)==false) {
                         
-                        if(settingDto.getSettingType().equals("position")) {
+                        if(settingDto.getSettingType().equals("position") || settingDto.getSettingType().equals("all")) {
                             positionDelete(queueName, key);
                         }
                         // 공통으로 지우는 부분
@@ -719,7 +719,7 @@ public class MainService {
         hashOperations.getOperations().delete("accept:"+listName);
         hashOperations.delete("acceptTime", listName);
 
-        if(settingDto.getSettingType().equals("position")) {
+        if(settingDto.getSettingType().equals("position") || settingDto.getSettingType().equals("all")) {
             hashOperations.getOperations().delete("position:"+listName);
         }
 
