@@ -37,7 +37,7 @@
         .match {
             margin: 10px auto;
         }
-        .waiting, .match_agree, .fail_other, .fail_me, .match_cancel, .matching, .time {
+        .waiting, .match_agree, .fail_other, .fail_me, .time {
             display: none;
         }
     </style>
@@ -48,11 +48,11 @@
             <div class="title">
                 <h1>팀 매칭</h1>
                 <h2>회원 닉네임 : </h2>
-                <h2 th:text="${userMatchDto.userNickname}"></h2>
-                <input type="text" id="userId" name="userId" th:value="${userMatchDto.userId}" hidden>
-                <input type="text" id="mmr" name="mmr" th:value="${userMatchDto.mmr}" hidden>
-                <input type="text" id="rank" name="rank" th:value="${userMatchDto.rank}" hidden>
-                <input type="text" id="position" name="position" hidden>
+                <!-- <h2 th:text="${userMatchDto.userNickname}"></h2> -->
+                <input type="text" id="userId" name="userId" value="1" hidden>
+                <!-- <input type="text" id="mmr" name="mmr" th:value="${userMatchDto.mmr}" hidden> -->
+                <!-- <input type="text" id="rank" name="rank" th:value="${userMatchDto.rank}" hidden> -->
+                <!-- <input type="text" id="position" name="position" hidden> -->
             </div>
             <div class="content">
                 <div class="choice">
@@ -64,7 +64,7 @@
                 </div>
                 <div class="match">
                     <button type="button" class="btn btn-primary btn-lg matching" id="matching" onclick="matchStart()">매칭하기</button>
-                    <button type="button" class="btn btn-danger btn-lg match_cancel" id="match_cancel" onclick="matchCancel()">매칭취소하기</button>
+                    <button type="button" class="btn btn-danger btn-lg match_cancel" id="match_cancel" onclick="matchEnd()">매칭취소하기</button>
                 </div>
                 
                 <div>
@@ -137,129 +137,187 @@
 
     // 포지션 선택 후 매칭 시작
     function matchStart() {
-        console.log(choice);
-        if(choice!="" && (choice=="support" || choice=="top" || choice=="jungle" || choice=="mid" || choice=="bottom")) {
-            console.log("성공 : "+choice);
-            // $('#time').show();
-            // TIMER();
-            $('#waiting').show();
-            $('#match_cancel').show();
-            $('#matching').hide();
-            var form = $('#frm').serialize();
-            $.ajax({
+
+        $.ajax({
                 url: '/match',
                 type: 'post',
                 dataType:'json',
                 // 데이터 보내는거 좀 더 고민해보기
-                // data: {"position":choice},
-                data: form,
+                data: {"userId":1},
+                // data: form,
                 success: function(r) {
                     if(r.code=="success") {
                         console.log("성공에 왔다"+r.code);
                         console.log(r.listName);
-                        $('#waiting').hide();
-                        $('#match_cancel').hide();
-                        $('#match_agree').show();
+                        // $('#waiting').hide();
+                        // $('#match_cancel').hide();
+                        // $('#match_agree').show();
                     }
                     else {
                         console.log("실패에 왔다"+r.code);
-                        $('#waiting').hide();
-                        $('#match_cancel').hide();
-                        $('#matching').show();
-                        if(r.code="cancel") {
-                            alert("매칭을 취소했습니다");
-                        }
-                        else {
-                            alert("매칭에 실패했습니다. 다시 시도해주세요");
-                        }
+                        // $('#waiting').hide();
+                        // $('#match_cancel').hide();
+                        // $('#matching').show();
+                        // if(r.code="cancel") {
+                        //     alert("매칭을 취소했습니다");
+                        // }
+                        // else {
+                        //     alert("매칭에 실패했습니다. 다시 시도해주세요");
+                        // }
                         // $("#frm").attr("action", "/user2/main");
                         // $("#frm").submit();
                     }
                 },
                 error : function(e) {
                     console.log(e);
-                    $('#waiting').hide();
-                    $('#match_cancel').hide();
-                    $('#matching').show();
-                    alert("매칭에 실패했습니다. 다시 시도해주세요");
+                    // $('#waiting').hide();
+                    // $('#match_cancel').hide();
+                    // $('#matching').show();
+                    // alert("매칭에 실패했습니다. 다시 시도해주세요");
                 }
             });
-        }
-        else {
-            console.log("실패 : "+choice);
-        }
+        // console.log(choice);
+        // if(choice!="" && (choice=="support" || choice=="top" || choice=="jungle" || choice=="mid" || choice=="bottom")) {
+        //     console.log("성공 : "+choice);
+        //     // $('#time').show();
+        //     // TIMER();
+        //     $('#waiting').show();
+        //     $('#match_cancel').show();
+        //     $('#matching').hide();
+        //     var form = $('#frm').serialize();
+        //     $.ajax({
+        //         url: '/match',
+        //         type: 'post',
+        //         dataType:'json',
+        //         // 데이터 보내는거 좀 더 고민해보기
+        //         // data: {"position":choice},
+        //         data: form,
+        //         success: function(r) {
+        //             if(r.code=="success") {
+        //                 console.log("성공에 왔다"+r.code);
+        //                 console.log(r.listName);
+        //                 $('#waiting').hide();
+        //                 $('#match_cancel').hide();
+        //                 $('#match_agree').show();
+        //             }
+        //             else {
+        //                 console.log("실패에 왔다"+r.code);
+        //                 $('#waiting').hide();
+        //                 $('#match_cancel').hide();
+        //                 $('#matching').show();
+        //                 if(r.code="cancel") {
+        //                     alert("매칭을 취소했습니다");
+        //                 }
+        //                 else {
+        //                     alert("매칭에 실패했습니다. 다시 시도해주세요");
+        //                 }
+        //                 // $("#frm").attr("action", "/user2/main");
+        //                 // $("#frm").submit();
+        //             }
+        //         },
+        //         error : function(e) {
+        //             console.log(e);
+        //             $('#waiting').hide();
+        //             $('#match_cancel').hide();
+        //             $('#matching').show();
+        //             alert("매칭에 실패했습니다. 다시 시도해주세요");
+        //         }
+        //     });
+        // }
+        // else {
+        //     console.log("실패 : "+choice);
+        // }
         
     }
 
-    function TIMER(){
-        PlAYTIME=setInterval(function(){
-            time=time-1000; //1초씩 줄어듦
-            // min=time/(60*1000); //초를 분으로 나눠준다.
-            Timer.value=sec;
-        // if(sec>0){ //sec=60 에서 1씩 빼서 출력해준다.
-        //         sec=sec-1;
-        //         Timer.value=Math.floor(min)+':'+sec; //실수로 계산되기 때문에 소숫점 아래를 버리고 출력해준다.
+    // function TIMER(){
+    //     PlAYTIME=setInterval(function(){
+    //         time=time-1000; //1초씩 줄어듦
+    //         // min=time/(60*1000); //초를 분으로 나눠준다.
+    //         Timer.value=sec;
+    //     // if(sec>0){ //sec=60 에서 1씩 빼서 출력해준다.
+    //     //         sec=sec-1;
+    //     //         Timer.value=Math.floor(min)+':'+sec; //실수로 계산되기 때문에 소숫점 아래를 버리고 출력해준다.
             
-        //     }
-        //     if(sec===0){
-        //         // 0에서 -1을 하면 -59가 출력된다.
-        //         // 그래서 0이 되면 바로 sec을 60으로 돌려주고 value에는 0을 출력하도록 해준다.
-        //         sec=60;
-        //         Timer.value=Math.floor(min)+':'+'00'
-        //     }     
+    //     //     }
+    //     //     if(sec===0){
+    //     //         // 0에서 -1을 하면 -59가 출력된다.
+    //     //         // 그래서 0이 되면 바로 sec을 60으로 돌려주고 value에는 0을 출력하도록 해준다.
+    //     //         sec=60;
+    //     //         Timer.value=Math.floor(min)+':'+'00'
+    //     //     }     
     
-        },1000); //1초마다 
-    }
+    //     },1000); //1초마다 
+    // }
 
-    setTimeout(function(){
-        clearInterval(PlAYTIME);
-    },10000);//5분이 되면 타이머를 삭제한다.
+    // setTimeout(function(){
+    //     clearInterval(PlAYTIME);
+    // },10000);//5분이 되면 타이머를 삭제한다.
 
     // 매칭 완료후 로직
     function matchEnd() {
-        var form = $('#frm').serialize();
         $.ajax({
-            url: '/match/complete',
-            type: 'post',
-            dataType:'json',
-            // 데이터 보내는거 좀 더 고민해보기
-            // data: {"position":choice},
-            data: form,
-            success: function(r) {
-                if(r.code=="success") {
-                    console.log("성공에 왔다"+r.code);
-                    console.log(r.listName);
-                    $('#waiting').hide();
-                    $('#match_cancel').hide();
-                    $('#match_agree').show();
-                }
-                else {
-                    console.log("실패에 왔다"+r.code);
-                    $('#waiting').hide();
-                    $('#match_cancel').hide();
-                    $('#matching').show();
-                    if(r.code="cancel") {
-                        alert("매칭을 취소했습니다");
+                url: '/match/accept',
+                type: 'post',
+                dataType:'json',
+                data: {"userId":1},
+                success: function(r) {
+                    if(r.code=="success") {
+                        console.log("성공에 왔다"+r.code);
                     }
                     else {
-                        alert("매칭에 실패했습니다. 다시 시도해주세요");
+                        console.log("실패에 왔다"+r.code);
                     }
-                    // $("#frm").attr("action", "/user2/main");
-                    // $("#frm").submit();
+                },
+                error : function(e) {
+                    console.log(e);
                 }
-            },
-            error : function(e) {
-                console.log(e);
-                $('#waiting').hide();
-                $('#match_cancel').hide();
-                $('#matching').show();
-                alert("매칭에 실패했습니다. 다시 시도해주세요");
-            }
-        });
-
-        // 팀 보여주는 페이지로 이동
-        // 누군가 취소해서 실패하면, 실패했다고 알려주고 다시 빨리 매칭 잡아주기
-        // 로딩화면 다시 띄우기
+            });
     }
+    // function matchEnd() {
+    //     var form = $('#frm').serialize();
+    //     $.ajax({
+    //         url: '/match/complete',
+    //         type: 'post',
+    //         dataType:'json',
+    //         // 데이터 보내는거 좀 더 고민해보기
+    //         // data: {"position":choice},
+    //         data: form,
+    //         success: function(r) {
+    //             if(r.code=="success") {
+    //                 console.log("성공에 왔다"+r.code);
+    //                 console.log(r.listName);
+    //                 $('#waiting').hide();
+    //                 $('#match_cancel').hide();
+    //                 $('#match_agree').show();
+    //             }
+    //             else {
+    //                 console.log("실패에 왔다"+r.code);
+    //                 $('#waiting').hide();
+    //                 $('#match_cancel').hide();
+    //                 $('#matching').show();
+    //                 if(r.code="cancel") {
+    //                     alert("매칭을 취소했습니다");
+    //                 }
+    //                 else {
+    //                     alert("매칭에 실패했습니다. 다시 시도해주세요");
+    //                 }
+    //                 // $("#frm").attr("action", "/user2/main");
+    //                 // $("#frm").submit();
+    //             }
+    //         },
+    //         error : function(e) {
+    //             console.log(e);
+    //             $('#waiting').hide();
+    //             $('#match_cancel').hide();
+    //             $('#matching').show();
+    //             alert("매칭에 실패했습니다. 다시 시도해주세요");
+    //         }
+    //     });
+
+    //     // 팀 보여주는 페이지로 이동
+    //     // 누군가 취소해서 실패하면, 실패했다고 알려주고 다시 빨리 매칭 잡아주기
+    //     // 로딩화면 다시 띄우기
+    // }
 </script>
 </html>

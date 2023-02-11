@@ -50,7 +50,7 @@ public class MainService {
         SettingDto settingDto = mainMapper.findBySettingId();
 
         // mmr만 고려하여 매칭 시켜주는 경우 -> 완료
-        return mmrIsMap(userId, settingDto);
+        // return mmrIsMap(userId, settingDto);
 
         // mmr, rank, position 고려하여 매칭 시켜주는 경우 -> 완료
         // return allIsMap(userId, settingDto);
@@ -59,7 +59,7 @@ public class MainService {
         // return rankIsMap(userId, settingDto);
 
         // mmr, position 고려하여 매칭 시켜주는 경우
-        // return positionIsMap(userId, settingDto);
+        return positionIsMap(userId, settingDto);
 
         // 두번 요청했을 경우, 예외
         
@@ -92,7 +92,7 @@ public class MainService {
 
             for(Object key : queueList) {
                 
-                if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2)) {
+                if(hashOperations.size("map:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("map:"+key.toString()) > 0) {
                     String minRange = key.toString().split("_")[0];
                     String maxRange = key.toString().split("_")[1];
         
@@ -111,7 +111,6 @@ public class MainService {
                 queueCreate(queueName, userMmrDto);
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
-
             result = queueAddResult(id, queueName, settingDto);
 
         }
@@ -122,19 +121,21 @@ public class MainService {
         HashMap<String, String> result = new HashMap<>();
         boolean condition = true;
 
+        int count = 0;
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
         hashOperations.put("queueAll", id, queueName);
 
         // map size가 정원보다 작을때는 계속 머무르기
-        if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2)) {
+        if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("map:"+queueName) > 0) {
             condition = false;
 
             // 중도 취소 여부 확인
-            String status = queueCheck(hashOperations.size("map:"+queueName), queueName, id, (settingDto.getSettingHeadcount()*2));
-            if(status.equals("cancel")) {
-                result.put("code", "cancel");
+            String status = queueCheck(hashOperations.size("map:"+queueName), queueName, id, (settingDto.getSettingHeadcount()*2), count);
+            if(status.contains("cancel")) {
+                result.put("code", status);
                 return result;
             }
+
         }
         result.put("code", "success");
         result.put("listname", queueName);    
@@ -154,9 +155,9 @@ public class MainService {
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
-        UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
+        UserPositionDto userPositionDto = mainMapper.findByPositionUserId(userId);
 
-        int mmr = userAllDto.getUserMmr();
+        int mmr = userPositionDto.getUserMmr();
 
         String id = Integer.toString(userId);
 
@@ -169,7 +170,7 @@ public class MainService {
             int min = mmr - range > 0 ? mmr - range : 0;
             int max = mmr + range;
 
-            String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+            String position = mainMapper.findByPositionId(userPositionDto.getPositionId()).getPositionName();
 
             List<String> positionList = new ArrayList<>();
 
@@ -177,7 +178,7 @@ public class MainService {
             List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
 
             for(Object key : queueList) {
-                if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2)) {
+                if(hashOperations.size("map:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("map:"+key.toString()) > 0) {
 
                     String minRange = key.toString().split("_")[0];
                     String maxRange = key.toString().split("_")[1];
@@ -190,15 +191,16 @@ public class MainService {
                 }           
             }
             if(positionList.size()>0) {
-                queueName = positionCheck(positionList, userAllDto, min, max, false);
+                queueName = positionCheck(positionList, userId, min, max, false);
             }
             else {
                 String uuid = UUID.randomUUID().toString();
                 queueName = min+"_"+max+"_"+uuid;
-                queueCreate(queueName, userAllDto);
+                queueCreate(queueName, userPositionDto);
                 hashOperations.put("position:"+queueName, position, "1");
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
+
             result = queueAddResult(id, queueName, settingDto);
         }
 
@@ -271,7 +273,6 @@ public class MainService {
                 queueCreate(queueName, userAllDto);
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
-
             result = queueAddResult(id, queueName, settingDto);
 
         }
@@ -343,7 +344,7 @@ public class MainService {
             }
     
             if(positionList.size()>0) {
-                queueName = positionCheck(positionList, userAllDto, min, max, true);
+                queueName = positionCheck(positionList, userId, min, max, true);
             }
             else {
                 // 일치하는 mmr이 없을 경우
@@ -355,8 +356,7 @@ public class MainService {
                 redisTemplate.opsForList().rightPush("queueList", queueName);
     
             }
-
-            result =  queueAddResult(id, queueName, settingDto);
+            result = queueAddResult(id, queueName, settingDto);
 
         }
         return result;
@@ -438,6 +438,10 @@ public class MainService {
         }
         String queueName = hashOperations.get("queueAll", id).toString();
 
+        if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2) 
+            || hashOperations.size("map:"+queueName) > (settingDto.getSettingHeadcount()*2)) {
+            throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
+        }
         // 두번 요청했을때 예외 처리
         if(hashOperations.hasKey("accept:"+queueName, id)==true) {
             throw new BusinessLogicException(ExceptionCode.DUPLICATION_REQUEST);
@@ -462,7 +466,7 @@ public class MainService {
             while(saveDate.after(date)) {
                 
                 Date newDate = new Date();
-                System.out.println("결과 : "+saveDate.after(newDate));
+                // System.out.println("결과 : "+saveDate.after(newDate));
                 
                 // 설정한 시간이 지날때까지 사이즈 검토
                 if(saveDate.after(newDate)==false) {
@@ -607,19 +611,24 @@ public class MainService {
     }
 
     // 매칭 진행 : 큐 사이즈 확인, 정원이 다 차면 재귀 메소드 탈출
-    private String queueCheck(Long size, String listName, String id, int headCount) throws InterruptedException, JsonMappingException, JsonProcessingException {
+    private String queueCheck(Long size, String listName, String id, int headCount, int count) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         
+        count += 1;
+        // 카운트가 3600이 되면 자동 취소, 3600은 약 1시간을 의미    
+        if(count == 3600) {
+            return "auto_cancel";
+        }
         if(hashOperations.hasKey("map:"+listName, id)==false) {
             return "cancel";
         }
         else {
             if(size < headCount) {
-                System.out.println("와서 뱅글뱅글 도는중 : "+size);
+                // System.out.println("와서 뱅글뱅글 도는중 : "+size);
                 Thread.sleep(1000);
-                String status = queueCheck(hashOperations.size("map:"+listName), listName, id, headCount);
-                if(status.equals("cancel")) {
-                    return "cancel";
+                String status = queueCheck(hashOperations.size("map:"+listName), listName, id, headCount, count);
+                if(status.contains("cancel")) {
+                    return status;
                 }
             }
             return "ok";
@@ -689,13 +698,21 @@ public class MainService {
     }
 
     // 포지션 확인
-    private String positionCheck(List<String> positionList, UserAllDto userAllDto, int min, int max, Boolean rankContain) throws JsonProcessingException {
+    private String positionCheck(List<String> positionList, int userId, int min, int max, Boolean rankContain) throws JsonProcessingException {
 
         String rank = "";
+        String position = "";
+        UserAllDto userAllDto = new UserAllDto();
+        UserPositionDto userPositionDto = new UserPositionDto();
         if(rankContain) {
+            userAllDto = mainMapper.findByAllUserId(userId);
             rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
+            position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
         }
-        String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+        else {
+            userPositionDto = mainMapper.findByPositionUserId(userId);
+            position = mainMapper.findByPositionId(userPositionDto.getPositionId()).getPositionName();
+        }
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         String queueName = "";
 
@@ -707,11 +724,12 @@ public class MainService {
                         String uuid = UUID.randomUUID().toString();
                         if(rank.equals("")) {
                             queueName = min+"_"+max+"_"+uuid;
+                            queueCreate(queueName, userPositionDto);
                         }
                         else {
                             queueName = rank+"_"+min+"_"+max+"_"+uuid;
+                            queueCreate(queueName, userAllDto);
                         }
-                        queueCreate(queueName, userAllDto);
                         System.out.println("일치하는 mmr이 있으나 포지션이 없어서 큐 새로 생성");
                         hashOperations.put("position:"+queueName, position, "1");
                         redisTemplate.opsForList().rightPush("queueList", queueName);
@@ -727,7 +745,12 @@ public class MainService {
                 else {
                     // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 1인경우, 0인경우
                     queueName = positionList.get(i);
-                    queueCreate(queueName, userAllDto);
+                    if(rank.equals("")) {
+                        queueCreate(queueName, userPositionDto);
+                    }
+                    else {
+                        queueCreate(queueName, userAllDto);
+                    }
                     System.out.println("큐 이름 테스트 : "+queueName);
                     hashOperations.put("position:"+queueName, position, "2");
                     return queueName;
@@ -736,7 +759,12 @@ public class MainService {
             else {
                 // 포지션 자리가 존재해 기존의 큐에 값 추가, 포지션 자리가 0인경우, 없는 경우
                 queueName = positionList.get(i);
-                queueCreate(queueName, userAllDto);
+                if(rank.equals("")) {
+                    queueCreate(queueName, userPositionDto);
+                }
+                else {
+                    queueCreate(queueName, userAllDto);
+                }
                 hashOperations.put("position:"+queueName, position, "1");
                 return queueName;
             }
@@ -820,8 +848,8 @@ public class MainService {
             List<UserAllDto> userB = new ArrayList<>();
 
             for (int i = 0; i < userListA.size(); i++) {
-                sumA = userListA.get(i).getUserMmr();
-                sumB = userListB.get(i).getUserMmr();
+                sumA += userListA.get(i).getUserMmr();
+                sumB += userListB.get(i).getUserMmr();
                 userB.add(userListB.get(i));
                 userA.add(userListA.get(i));
             }
@@ -832,7 +860,7 @@ public class MainService {
             teamList.add(userA);
             teamList.add(userB);
 
-            // System.out.println("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
+            System.out.println("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
 
             if(sumDif==0) {
                 teamResult.put(sumDif, teamList);

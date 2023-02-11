@@ -11,7 +11,7 @@ public class UserRankDto {
 
     private String userNickname;
 
-    private String userRank;
+    private int rankId;
 
     private String queueName;
 

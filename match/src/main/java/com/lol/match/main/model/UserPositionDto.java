@@ -11,7 +11,7 @@ public class UserPositionDto {
 
     private String userNickname;
 
-    private String userPosition;
+    private int positionId;
 
     private String queueName;
 
