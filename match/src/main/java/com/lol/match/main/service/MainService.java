@@ -91,14 +91,17 @@ public class MainService {
             List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
 
             for(Object key : queueList) {
-                String minRange = key.toString().split("_")[0];
-                String maxRange = key.toString().split("_")[1];
-    
-                if (Integer.parseInt(minRange) <= mmr) {
-                    if (Integer.parseInt(maxRange) >= mmr) {
-                        queueName = key.toString();
-                        queueCreate(queueName, userMmrDto);
-                        break;
+                
+                if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2)) {
+                    String minRange = key.toString().split("_")[0];
+                    String maxRange = key.toString().split("_")[1];
+        
+                    if (Integer.parseInt(minRange) <= mmr) {
+                        if (Integer.parseInt(maxRange) >= mmr) {
+                            queueName = key.toString();
+                            queueCreate(queueName, userMmrDto);
+                            break;
+                        }
                     }
                 }           
             }
@@ -174,12 +177,15 @@ public class MainService {
             List<Object> queueList = operations.opsForList().range("queueList", 0, listSize-1);
 
             for(Object key : queueList) {
-                String minRange = key.toString().split("_")[0];
-                String maxRange = key.toString().split("_")[1];
-    
-                if (Integer.parseInt(minRange) <= mmr) {
-                    if (Integer.parseInt(maxRange) >= mmr) {
-                        positionList.add(key.toString());
+                if(hashOperations.size("map:"+queueName) < (settingDto.getSettingHeadcount()*2)) {
+
+                    String minRange = key.toString().split("_")[0];
+                    String maxRange = key.toString().split("_")[1];
+        
+                    if (Integer.parseInt(minRange) <= mmr) {
+                        if (Integer.parseInt(maxRange) >= mmr) {
+                            positionList.add(key.toString());
+                        }
                     }
                 }           
             }
