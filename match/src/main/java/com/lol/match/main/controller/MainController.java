@@ -39,12 +39,18 @@ public class MainController {
 
     private final ObjectMapper objectMapper;
 
-
+    int count = 0;
     @PostMapping("/main")
     public String main(UserAllDto userAllDto, Model model) {
 
         System.out.println("회원정보 : "+ userAllDto.toString());
         model.addAttribute("userAllDto", userAllDto);
+
+        return "main";
+    }
+
+    @GetMapping("/main")
+    public String getMain() {
 
         return "main";
     }
@@ -55,8 +61,16 @@ public class MainController {
     @ResponseBody
     public HashMap<String, String> match(@RequestParam int userId) throws Exception {
 
-        HashMap<String, String> result = mainService.match(userId);
-
+        HashMap<String, String> result = new HashMap<>();
+        count += 1;
+        System.out.println("count : " + count);
+        if(count < 31) {
+            result = mainService.match(count);
+        }
+        if(count == 31) {
+            count = 0;
+        }
+        System.out.println("최종결과 : "+result.toString());
         return result;
     }
 
@@ -75,7 +89,17 @@ public class MainController {
     @ResponseBody
     public HashMap<String, String> matchAccept(@RequestParam int userId) throws Exception {
         
-        HashMap<String, String> result = mainService.matchAccept(userId);
+        HashMap<String, String> result = new HashMap<>();
+        count += 1;
+        System.out.println("count : " + count);
+        if(count < 31) {
+            result = mainService.matchAccept(count);
+        }
+        if(count == 31) {
+            count = 0;
+        }
+        System.out.println("최종결과 : "+result.toString());
+        // HashMap<String, String> result = mainService.matchAccept(userId);
 
         return result;
     }
