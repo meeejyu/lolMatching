@@ -22,7 +22,6 @@ public class SchedulerService {
     public void listDeleteScheduler() {
 
         log.info("리스트 삭제 작업 실행");
-        Boolean condition = true;
         
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -31,21 +30,14 @@ public class SchedulerService {
         if(operations.opsForList().size("queueList") > 0) {
             List<Object> queueList = operations.opsForList().range("queueList", 0, operations.opsForList().size("queueList")-1);
 
-            int count = 0;
-
-            while(condition) {
-                if(hashOperations.size("map:"+queueList.get(count).toString()) == 0) {
+            for (int i = 0; i < queueList.size(); i++) {
+                if(hashOperations.size("map:"+queueList.get(i).toString()) == 0) {
                     operations.opsForList().leftPop("queueList");
-                    count =+ 1;
-                    if(operations.opsForList().size("queueList") == 0) {
-                        condition = false;
-                    }
                 }
                 else {
-                    condition = false;
+                    break;
                 }
             }
-
         }
     }
 }

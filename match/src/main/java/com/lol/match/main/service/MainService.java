@@ -49,20 +49,20 @@ public class MainService {
         // DB로 세팅 정보 가져오기
         SettingDto settingDto = mainMapper.findBySettingId();
 
-        // mmr만 고려하여 매칭 시켜주는 경우 -> 완료
+        // TODO : 아래의 4가지 선택지에서 원하는 메소드를 주석 해제 후 사용
+        
+        // mmr만 고려하여 매칭 시켜주는 경우 
         // return mmrIsMap(userId, settingDto);
 
-        // mmr, rank, position 고려하여 매칭 시켜주는 경우 -> 완료
+        // mmr, rank, position 고려하여 매칭 시켜주는 경우 
         // return allIsMap(userId, settingDto);
 
-        // mmr, rank 매칭 시켜주는 경우 -> 완료
-        // return rankIsMap(userId, settingDto);
+        // mmr, rank 매칭 시켜주는 경우 
+        return rankIsMap(userId, settingDto);
 
         // mmr, position 고려하여 매칭 시켜주는 경우
-        return positionIsMap(userId, settingDto);
+        // return positionIsMap(userId, settingDto);
 
-        // 두번 요청했을 경우, 예외
-        
     }
 
     private HashMap<String, String> mmrIsMap(int userId, SettingDto settingDto) throws JsonProcessingException, InterruptedException, ParseException {
@@ -214,9 +214,9 @@ public class MainService {
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
-        UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
+        UserRankDto userRankDto = mainMapper.findByRankUserId(userId);
 
-        int mmr = userAllDto.getUserMmr();
+        int mmr = userRankDto.getUserMmr();
 
         String id = Integer.toString(userId);
 
@@ -229,7 +229,7 @@ public class MainService {
             int min = mmr - range > 0 ? mmr - range : 0;
             int max = mmr + range;
     
-            RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
+            RankDto rankdto = mainMapper.findByRankId(userRankDto.getRankId());
 
             List<String> rankList = new ArrayList<>();
             List<String> rankFilterList = new ArrayList<>();
@@ -261,7 +261,7 @@ public class MainService {
                 if (Integer.parseInt(minRange) <= mmr) {
                     if (Integer.parseInt(maxRange) >= mmr) {
                         queueName = fileterList;
-                        queueCreate(queueName, userAllDto);
+                        queueCreate(queueName, userRankDto);
                         break;
                     }
                 }           
@@ -270,7 +270,7 @@ public class MainService {
             if(queueName.equals("")) {
                 String uuid = UUID.randomUUID().toString();
                 queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
-                queueCreate(queueName, userAllDto);
+                queueCreate(queueName, userRankDto);
                 redisTemplate.opsForList().rightPush("queueList", queueName);
             }
             result = queueAddResult(id, queueName, settingDto);
@@ -348,7 +348,7 @@ public class MainService {
             }
             else {
                 // 일치하는 mmr이 없을 경우
-                System.out.println("새롭게 큐를 추가함 ");
+                log.info("새롭게 큐를 추가함 ");
                 String uuid = UUID.randomUUID().toString();
                 queueName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
                 queueCreate(queueName, userAllDto);
@@ -368,12 +368,12 @@ public class MainService {
         Date date = new Date();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
         Calendar cal = Calendar.getInstance();
-        System.out.println("date : "+date);
+        // log.info("date : "+date);
         cal.setTime(date);
         cal.add(Calendar.SECOND, time);
-        System.out.println("date+time : "+cal.getTime());
+        // log.info("date+time : "+cal.getTime());
         String saveTime = simpleDateFormat.format(cal.getTime());
-        System.out.println("saveTime : "+saveTime);
+        log.info("saveTime : "+saveTime);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
         hashOperations.put("acceptTime", listName, saveTime);
@@ -447,7 +447,6 @@ public class MainService {
             throw new BusinessLogicException(ExceptionCode.DUPLICATION_REQUEST);
         }
         Date date = new Date();
-        System.out.println("date : "+date);
 
         Object object = hashOperations.get("acceptTime", queueName);
 
@@ -466,7 +465,7 @@ public class MainService {
             while(saveDate.after(date)) {
                 
                 Date newDate = new Date();
-                // System.out.println("결과 : "+saveDate.after(newDate));
+                // log.info("결과 : "+saveDate.after(newDate));
                 
                 // 설정한 시간이 지날때까지 사이즈 검토
                 if(saveDate.after(newDate)==false) {
@@ -496,7 +495,7 @@ public class MainService {
                 }
                 Thread.sleep(1000);
             }
-            System.out.println("size = "+hashOperations.size("accept:"+queueName));
+            // log.info("size = "+hashOperations.size("accept:"+queueName));
             if(hashOperations.size("accept:"+queueName) == (settingDto.getSettingHeadcount()*2)) {
                 result.put("code", "success");
                     result.put("listname", queueName);
@@ -595,6 +594,28 @@ public class MainService {
 
     }
 
+    // queueAll 삭제
+    public void deleteAll(String queueName) {
+
+        HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+        int size = hashOperations.entries("map:"+queueName).size();
+
+        Map<Object, Object> allMap = hashOperations.entries("queueAll");
+        int count = 0;
+        
+        for(Object key : allMap.keySet()) {
+            if(hashOperations.get("queueAll", key).toString().equals(queueName)) {
+                hashOperations.delete("queueAll", key);
+                count += 1;
+            }
+            // 큐에 들어있는 사이즈만큼 다 지우면 바로 탈출
+            if(count==size) {
+                break;
+            }
+        }
+    }
+
     // 팀 정보 List 형태로 저장
     private List<UserAllDto> teamInfo(Map<Object, Object> teamMap) throws JsonMappingException, JsonProcessingException {
         int count = 0;
@@ -624,7 +645,6 @@ public class MainService {
         }
         else {
             if(size < headCount) {
-                // System.out.println("와서 뱅글뱅글 도는중 : "+size);
                 Thread.sleep(1000);
                 String status = queueCheck(hashOperations.size("map:"+listName), listName, id, headCount, count);
                 if(status.contains("cancel")) {
@@ -730,15 +750,13 @@ public class MainService {
                             queueName = rank+"_"+min+"_"+max+"_"+uuid;
                             queueCreate(queueName, userAllDto);
                         }
-                        System.out.println("일치하는 mmr이 있으나 포지션이 없어서 큐 새로 생성");
+                        log.info("일치하는 mmr이 있으나 포지션이 없어서 큐 새로 생성");
                         hashOperations.put("position:"+queueName, position, "1");
                         redisTemplate.opsForList().rightPush("queueList", queueName);
-                        System.out.println("큐 이름 테스트 : "+queueName);
                         return queueName;
                     }
                     else {
                         // 해당 큐에 포지션이 없으나, 다음 후보가 있을 경우
-                        System.out.println("오니?");
                         continue;
                     }
                 }
@@ -751,7 +769,6 @@ public class MainService {
                     else {
                         queueCreate(queueName, userAllDto);
                     }
-                    System.out.println("큐 이름 테스트 : "+queueName);
                     hashOperations.put("position:"+queueName, position, "2");
                     return queueName;
                 }
@@ -774,13 +791,11 @@ public class MainService {
 
     }
 
-    // 큐를 지우기
+    // 큐를 지우기 : map, acceptm, acceptTime, position
     public void delete(String listName) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         SettingDto settingDto = mainMapper.findBySettingId();
-
-        int size = hashOperations.entries("map:"+listName).size();
 
         hashOperations.getOperations().delete("map:"+listName);        
         hashOperations.getOperations().delete("accept:"+listName);
@@ -788,20 +803,6 @@ public class MainService {
 
         if(settingDto.getSettingType().equals("position") || settingDto.getSettingType().equals("all")) {
             hashOperations.getOperations().delete("position:"+listName);
-        }
-
-        Map<Object, Object> allMap = hashOperations.entries("queueAll");
-        int count = 0;
-        
-        for(Object key : allMap.keySet()) {
-            if(hashOperations.get("queueAll", key).toString().equals(listName)) {
-                hashOperations.delete("queueAll", key);
-                count += 1;
-            }
-            // 큐에 들어있는 사이즈만큼 다 지우면 바로 탈출
-            if(count==size) {
-                break;
-            }
         }
     }
 
@@ -827,7 +828,6 @@ public class MainService {
 
         mmrCombi(teamResult, userListA, userListB, headCount);
 
-        System.out.println("순조로운 진행~~");
         for(Integer key : teamResult.keySet()) {
             for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
                 UserAllDto userAllDtoA = teamResult.get(key).get(0).get(i);
@@ -835,7 +835,7 @@ public class MainService {
                 hashOperations.put("teamA:"+queueName, Integer.toString(userAllDtoA.getUserId()), objectMapper.writeValueAsString(userAllDtoA));
                 hashOperations.put("teamB:"+queueName, Integer.toString(userAllDtoB.getUserId()), objectMapper.writeValueAsString(userAllDtoB));
             }
-            System.out.println("최종값 : " + key);
+            log.info("최종값 : " + key);
         }
     }
 
@@ -860,7 +860,7 @@ public class MainService {
             teamList.add(userA);
             teamList.add(userB);
 
-            System.out.println("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
+            // log.info("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
 
             if(sumDif==0) {
                 teamResult.put(sumDif, teamList);
@@ -934,7 +934,6 @@ public class MainService {
         // 포지션에 따른 조합
         positionCombi(userInfoA, userInfoB, positionListSize-1, userPositionList, teamResult);
 
-        System.out.println("순조로운 진행~~");
         for(Integer key : teamResult.keySet())
         for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
             UserAllDto userAllDtoA = teamResult.get(key).get(0).get(i);

@@ -4,15 +4,99 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <html xmlns:th="http://www.thymeleaf.org" lang="en">
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <title>matching</title>
+    <style>
+        .container {
+            width: 700px;
+            height: 700px;
+            margin: 10px auto;
+            border: 1px solid red;
+            display: flex;
+            align-items: center;
+        }
+        .frm {
+            margin: 0 auto;
+        }
+        .title {
+            text-align : center
+        }
+        .content {
+            margin: 0 auto;
+            text-align : center;
+        }
+        .choice {
+            display: flex;
+            justify-content : center;
+            gap: 10px;
+            margin: 10px auto;
+        }
+        .match {
+            margin: 10px auto;
+        }
+    </style>
 </head>
 <body>
-    <form class="frm" id="frm" name="frm" action="/main" method="post">
-        <p>userId : </p><input type="text" id="userId" name="userId">
-        <p>userNickname : </p><input type="text" id="userNickname" name="userNickname">
-        <p>mmr : <input type="text" id="mmr" name="mmr"></p>
-        <p>rank : <input type="text" id="rank" name="rank"></p>
-        <button type="submit">전송</button>
-    </form>
+    <div class="container">
+        <form class="frm" id="frm" name="frm">
+            <div class="content">
+                <div class="match">
+                    <button type="button" class="btn btn-primary btn-lg matching" id="matching" onclick="matchStart()">매칭하기</button>
+                    <button type="button" class="btn btn-danger btn-lg match_cancel" id="match_cancel" onclick="matchEnd()">매칭수락하기</button>
+                </div>
+                
+            </div>
+        </form>
+    </div>
 </body>
+<script type="text/javascript">
+
+    // 포지션 선택 후 매칭 시작
+    function matchStart() {
+
+        $.ajax({
+                url: '/match/test',
+                type: 'post',
+                dataType:'json',
+                data: {"userId":1},
+                success: function(r) {
+                    if(r.code=="success") {
+                        console.log("매칭 성공"+r.code);
+                        console.log(r.listName);
+                    }
+                    else {
+                        console.log("매칭 실패"+r.code);
+                    }
+                },
+                error : function(e) {
+                    console.log(e);
+                    alert("매칭에 실패했습니다. 다시 시도해주세요");
+                }
+            });
+    }
+
+    // 매칭 완료후 로직
+    function matchEnd() {
+        $.ajax({
+                url: '/match/accept/test',
+                type: 'post',
+                dataType:'json',
+                data: {"userId":1},
+                success: function(r) {
+                    if(r.code=="success") {
+                        console.log("성공에 왔다"+r.code);
+                    }
+                    else {
+                        console.log("실패에 왔다"+r.code);
+                    }
+                },
+                error : function(e) {
+                    console.log(e);
+                }
+            });
+    }
+</script>
 </html>
