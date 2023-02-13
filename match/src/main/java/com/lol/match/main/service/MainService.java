@@ -659,14 +659,13 @@ public class MainService {
         
         List<RankDto> rankDtoList = mainMapper.findByRank();
         
-        rankDtoList.get(0);
         List<String> rankList = new ArrayList<>();
 
         if(rankDto.getRankLevel()==1) {
             rankList.add(rankDtoList.get(1).getRankName());
         }
         else if(rankDto.getRankLevel()==rankDtoList.size()) {
-            rankList.add(rankDtoList.get(8).getRankName());
+            rankList.add(rankDtoList.get(rankDtoList.size()-2).getRankName());
         }
         else {
             rankList.add(rankDtoList.get(rankDto.getRankLevel()-2).getRankName());
