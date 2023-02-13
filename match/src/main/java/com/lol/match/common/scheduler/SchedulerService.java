@@ -27,12 +27,12 @@ public class SchedulerService {
 
         RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
         
-        if(operations.opsForList().size("queueList") > 0) {
-            List<Object> queueList = operations.opsForList().range("queueList", 0, operations.opsForList().size("queueList")-1);
+        if(operations.opsForList().size("teamList") > 0) {
+            List<Object> queueList = operations.opsForList().range("teamList", 0, operations.opsForList().size("teamList")-1);
 
             for (int i = 0; i < queueList.size(); i++) {
-                if(hashOperations.size("map:"+queueList.get(i).toString()) == 0) {
-                    operations.opsForList().leftPop("queueList");
+                if(hashOperations.size("match:"+queueList.get(i).toString()) == 0) {
+                    operations.opsForList().leftPop("teamList");
                 }
                 else {
                     break;

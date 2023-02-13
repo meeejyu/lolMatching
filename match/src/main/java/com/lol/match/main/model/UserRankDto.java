@@ -13,11 +13,11 @@ public class UserRankDto {
 
     private int rankId;
 
-    private String queueName;
+    private String teamName;
 
     // 큐 이름 세팅
-    public void queueNameSet(String queueName) {
-        this.queueName = queueName;
+    public void setTeamName(String teamName) {
+        this.teamName = teamName;
     }
     
 }

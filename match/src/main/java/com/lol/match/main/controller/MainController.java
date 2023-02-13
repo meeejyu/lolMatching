@@ -40,12 +40,12 @@ public class MainController {
     }
 
 
-    // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : queue에서 해당 유저 정보 삭제
-    @PostMapping("/queue/cancel")
+    // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
+    @PostMapping("/match/cancel")
     @ResponseBody
-    public HashMap<String, String> queueListDelete(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> teamListDelete(@RequestParam int userId) throws Exception {
 
-        HashMap<String, String> result = mainService.queueListDeleteUser(userId);
+        HashMap<String, String> result = mainService.teamListDeleteUser(userId);
 
         return result;
     }
@@ -63,9 +63,9 @@ public class MainController {
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
     @PostMapping("/match/complete")
     @ResponseBody
-    public GroupMatchDto matchComplete(@RequestParam int userId, String queueName) throws Exception {
+    public GroupMatchDto matchComplete(@RequestParam int userId, String teamName) throws Exception {
         
-        GroupMatchDto groupMatchDto = mainService.matchCompleteUser(userId, queueName);
+        GroupMatchDto groupMatchDto = mainService.matchCompleteUser(userId, teamName);
         
         return groupMatchDto;
 
@@ -75,18 +75,18 @@ public class MainController {
     @ResponseBody
     public String matchEnd(@PathVariable String listName) {
         
-        mainService.deleteQueueAll(listName);
+        mainService.deleteMatchAll(listName);
 
         return "ok";
     }
     
     // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행
-    @DeleteMapping("/queue/delete/{listName}")
+    @DeleteMapping("/match/delete/{listName}")
     @ResponseBody
     public String delete(@PathVariable String listName) {
         
         mainService.deleteMatchInfo(listName);
-        mainService.deleteQueueAll(listName);
+        mainService.deleteMatchAll(listName);
 
         return "ok";
     }
