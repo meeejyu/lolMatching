@@ -60,8 +60,6 @@
         $.ajax({
                 url: '/match/test',
                 type: 'post',
-                dataType:'json',
-                data: {"userId":1},
                 success: function(r) {
                     if(r.code=="success") {
                         console.log("매칭 성공"+r.code);
@@ -83,8 +81,6 @@
         $.ajax({
                 url: '/match/accept/test',
                 type: 'post',
-                dataType:'json',
-                data: {"userId":1},
                 success: function(r) {
                     if(r.code=="success") {
                         console.log("성공에 왔다"+r.code);

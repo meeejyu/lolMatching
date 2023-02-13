@@ -44,7 +44,7 @@ public class MainService {
 
     private final ObjectMapper objectMapper;
  
-    public HashMap<String, String> match(int userId) throws Exception {
+    public HashMap<String, String> matchUser(int userId) throws Exception {
 
         // DB로 세팅 정보 가져오기
         SettingDto settingDto = mainMapper.findBySettingId();
@@ -55,10 +55,10 @@ public class MainService {
         // return mmrIsMap(userId, settingDto);
 
         // mmr, rank, position 고려하여 매칭 시켜주는 경우 
-        // return allIsMap(userId, settingDto);
+        return allIsMap(userId, settingDto);
 
         // mmr, rank 매칭 시켜주는 경우 
-        return rankIsMap(userId, settingDto);
+        // return rankIsMap(userId, settingDto);
 
         // mmr, position 고려하여 매칭 시켜주는 경우
         // return positionIsMap(userId, settingDto);
@@ -380,7 +380,7 @@ public class MainService {
     }
 
     // queue에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : ALL
-    public HashMap<String, String> queueListDelete(int userId) throws Exception {
+    public HashMap<String, String> queueListDeleteUser(int userId) throws Exception {
 
         HashMap<String, String> result = new HashMap<>();
 
@@ -420,7 +420,7 @@ public class MainService {
     }
     
     // 대전 매칭 완료하기 
-    public HashMap<String, String> matchAccept(int userId) throws Exception {
+    public HashMap<String, String> matchAcceptUser(int userId) throws Exception {
         
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -489,7 +489,7 @@ public class MainService {
                         }
 
                         // 팀 정보 제외 전체 삭제
-                        delete(queueName);                        
+                        deleteMatchInfo(queueName);                        
                     }
                     return result;
                 }
@@ -507,7 +507,7 @@ public class MainService {
                             positionDivide(queueName);
                         }
                         // 팀 정보 제외 전체 삭제
-                        delete(queueName);                        
+                        deleteMatchInfo(queueName);                        
                     }
                 return result;
             }
@@ -568,7 +568,7 @@ public class MainService {
 
 
     // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
-    public GroupMatchDto matchComplete(int userId, String queueName) throws Exception {
+    public GroupMatchDto matchCompleteUser(int userId, String queueName) throws Exception {
         
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -595,7 +595,7 @@ public class MainService {
     }
 
     // queueAll 삭제
-    public void deleteAll(String queueName) {
+    public void deleteQueueAll(String queueName) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -791,8 +791,8 @@ public class MainService {
 
     }
 
-    // 큐를 지우기 : map, acceptm, acceptTime, position
-    public void delete(String listName) {
+    // 큐를 지우기 : map, accept, acceptTime, position
+    public void deleteMatchInfo(String listName) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         SettingDto settingDto = mainMapper.findBySettingId();

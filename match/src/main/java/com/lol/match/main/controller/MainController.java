@@ -23,28 +23,29 @@ public class MainController {
 
     int count = 0;
 
-    @GetMapping("/main")
-    public String getMain() {
+    @GetMapping("/test")
+    public String testHtml() {
 
         return "test";
     }
 
-    // 매칭 하기
+    // 매칭 하기 all 타입
     @PostMapping("/match")
     @ResponseBody
     public HashMap<String, String> match(@RequestParam int userId) throws Exception {
 
-        HashMap<String, String> result = mainService.matchAccept(userId);
+        HashMap<String, String> result = mainService.matchUser(userId);
         
         return result;
     }
+
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : queue에서 해당 유저 정보 삭제
     @PostMapping("/queue/cancel")
     @ResponseBody
     public HashMap<String, String> queueListDelete(@RequestParam int userId) throws Exception {
 
-        HashMap<String, String> result = mainService.queueListDelete(userId);
+        HashMap<String, String> result = mainService.queueListDeleteUser(userId);
 
         return result;
     }
@@ -54,7 +55,7 @@ public class MainController {
     @ResponseBody
     public HashMap<String, String> matchAccept(@RequestParam int userId) throws Exception {
         
-        HashMap<String, String> result = mainService.matchAccept(userId);
+        HashMap<String, String> result = mainService.matchAcceptUser(userId);
 
         return result;
     }
@@ -64,19 +65,28 @@ public class MainController {
     @ResponseBody
     public GroupMatchDto matchComplete(@RequestParam int userId, String queueName) throws Exception {
         
-        GroupMatchDto groupMatchDto = mainService.matchComplete(userId, queueName);
+        GroupMatchDto groupMatchDto = mainService.matchCompleteUser(userId, queueName);
         
         return groupMatchDto;
 
     }
+    // 게임이 종료된 이후 해당 메소드 실행
+    @DeleteMapping("/match/end/{listName}")
+    @ResponseBody
+    public String matchEnd(@PathVariable String listName) {
+        
+        mainService.deleteQueueAll(listName);
 
-    // 큐를 지우고 싶을때
+        return "ok";
+    }
+    
+    // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행
     @DeleteMapping("/queue/delete/{listName}")
     @ResponseBody
     public String delete(@PathVariable String listName) {
         
-        mainService.delete(listName);
-        mainService.deleteAll(listName);
+        mainService.deleteMatchInfo(listName);
+        mainService.deleteQueueAll(listName);
 
         return "ok";
     }
@@ -84,14 +94,14 @@ public class MainController {
     // 매칭 테스트 코드
     @PostMapping("/match/test")
     @ResponseBody
-    public HashMap<String, String> matchTest(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchTest() throws Exception {
 
         // 테스트 코드
         HashMap<String, String> result = new HashMap<>();
         count += 1;
         System.out.println("count : " + count);
         if(count < 41) {
-            result = mainService.match(count);
+            result = mainService.matchUser(count);
         }
         if(count == 41) {
             count = 0;
@@ -103,14 +113,14 @@ public class MainController {
     // 매칭 수락 테스트 코드
     @PostMapping("/match/accept/test")
     @ResponseBody
-    public HashMap<String, String> matchAcceptTest(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchAcceptTest() throws Exception {
         
         // 테스트 코드
         HashMap<String, String> result = new HashMap<>();
         count += 1;
         System.out.println("count : " + count);
         if(count < 41) {
-            result = mainService.matchAccept(count);
+            result = mainService.matchAcceptUser(count);
         }
         if(count == 41) {
             count = 0;
