@@ -231,30 +231,30 @@ public class MainService {
     
             RankDto rankdto = mainMapper.findByRankId(userRankDto.getRankId());
 
-            List<String> rankList = new ArrayList<>();
-            List<String> rankFilterList = new ArrayList<>();
-    
-            // 랭크 계급 설정
-            rankList = rankListAdd(rankdto);
-
             Long listSize = operations.opsForList().size("teamList");
             List<Object> teamList = operations.opsForList().range("teamList", 0, listSize-1);
 
-            // 랭크 필터링
-            for (Object key : teamList) {
-                // 팀 사이즈 확인 
-                if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
-                    String name = String.valueOf(key).split("_")[0];
-                    for (int i = 0; i < rankList.size(); i++) {
-                        if(name.equals(rankList.get(i))) {
-                            rankFilterList.add(key.toString());
-                        }
-                    }
-                }
-            }    
+            // 랭크 계급 설정 및 랭크 필터링
+            List<String> rankList = rankListAdd(rankdto, teamList, settingDto);
+            // List<String> rankFilterList = new ArrayList<>();
+    
+            // rankList = 
+
+            // // 랭크 필터링
+            // for (Object key : teamList) {
+            //     // 팀 사이즈 확인 
+            //     if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
+            //         String name = String.valueOf(key).split("_")[0];
+            //         for (int i = 0; i < rankList.size(); i++) {
+            //             if(name.equals(rankList.get(i))) {
+            //                 rankFilterList.add(key.toString());
+            //             }
+            //         }
+            //     }
+            // }    
     
             // mmr 범위 조정
-            for(String fileterList : rankFilterList) {
+            for(String fileterList : rankList) {
                 String minRange = String.valueOf(fileterList).split("_")[1];
                 String maxRange = String.valueOf(fileterList).split("_")[2];
     
@@ -307,32 +307,32 @@ public class MainService {
             int max = mmr + range;
     
             List<String> rankList = new ArrayList<>();
-    
-            // 랭크 계급 설정
-            rankList = rankListAdd(rankdto);
             
             // Redis Data List 출력
             Long listSize = operations.opsForList().size("teamList");
             List<Object> teamList = operations.opsForList().range("teamList", 0, listSize-1);
+
+            // 랭크 계급 설정
+            rankList = rankListAdd(rankdto, teamList, settingDto);
     
-            List<String> rankFilterList = new ArrayList<>();
+            // List<String> rankFilterList = new ArrayList<>();
             List<String> positionList = new ArrayList<>();
     
-            // 랭크 필터링
-            for (Object key : teamList) {
-                // 팀 사이즈 확인 
-                if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
-                    String name = String.valueOf(key).split("_")[0];
-                    for (int i = 0; i < rankList.size(); i++) {
-                        if(name.equals(rankList.get(i))) {
-                            rankFilterList.add(key.toString());
-                        }
-                    }
-                }
-            }    
+            // // 랭크 필터링
+            // for (Object key : teamList) {
+            //     // 팀 사이즈 확인 
+            //     if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
+            //         String name = String.valueOf(key).split("_")[0];
+            //         for (int i = 0; i < rankList.size(); i++) {
+            //             if(name.equals(rankList.get(i))) {
+            //                 rankFilterList.add(key.toString());
+            //             }
+            //         }
+            //     }
+            // }    
     
             // mmr 범위 조정
-            for(String fileterList : rankFilterList) {
+            for(String fileterList : rankList) {
                 String minRange = String.valueOf(fileterList).split("_")[1];
                 String maxRange = String.valueOf(fileterList).split("_")[2];
     
@@ -360,6 +360,44 @@ public class MainService {
 
         }
         return result;
+    }
+
+    private List<String> rankListAdd(RankDto rankdto, List<Object> teamList, SettingDto settingDto) {
+        
+        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
+
+        List<RankDto> rankDtoList = mainMapper.findByRank();
+        
+        List<String> rankList = new ArrayList<>();
+
+        List<String> rankFilterList = new ArrayList<>();
+
+        if(rankdto.getRankLevel()==1) {
+            rankList.add(rankDtoList.get(1).getRankName());
+        }
+        else if(rankdto.getRankLevel()==rankDtoList.size()) {
+            rankList.add(rankDtoList.get(rankDtoList.size()-2).getRankName());
+        }
+        else {
+            rankList.add(rankDtoList.get(rankdto.getRankLevel()-2).getRankName());
+            rankList.add(rankDtoList.get(rankdto.getRankLevel()).getRankName());
+        }
+        rankList.add(rankdto.getRankName());
+
+        // 랭크 필터링
+        for (Object key : teamList) {
+            // 팀 사이즈 확인 
+            if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
+                String name = String.valueOf(key).split("_")[0];
+                for (int i = 0; i < rankList.size(); i++) {
+                    if(name.equals(rankList.get(i))) {
+                        rankFilterList.add(key.toString());
+                    }
+                }
+            }
+        }
+
+        return rankFilterList;
     }
 
     // 동의 시간 저장
@@ -535,7 +573,7 @@ public class MainService {
                     }
                 }
                 hashOperations.getOperations().delete("accept:"+teamName);
-
+                hashOperations.delete("acceptTime", teamName);
             }
 
             return result;
@@ -548,7 +586,6 @@ public class MainService {
 
         hashOperations.delete("match:"+teamName, key);
         hashOperations.delete("matchAll", key);
-        hashOperations.delete("acceptTime", teamName);
 
     }
 
@@ -636,15 +673,18 @@ public class MainService {
         return teamList;
     }
 
-    // 매칭 진행 : 팀 사이즈 확인, 정원이 다 차면 재귀 메소드 탈출
+    // 매칭 진행 : 팀 사이즈 확인, 정원이 다 차면 메소드 탈출
     private String teamCheck(Long size, String listName, String id, int headCount, int count) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
         Boolean condition = true;
-        count += 1;
+        Date date = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.HOUR, 1);
 
         while(condition) {
-            Thread.sleep(1000);
-            if(count == 3600) {
+            Date now = new Date();
+            if(now.after(cal.getTime())) {
                 return "auto_cancel";
             }
             if(hashOperations.hasKey("match:"+listName, id)==false) {
@@ -653,34 +693,35 @@ public class MainService {
             if(hashOperations.size("match:"+listName) < headCount) {
                 continue;
             }
-            if(hashOperations.size("match:"+listName) < headCount) {
+            if(hashOperations.size("match:"+listName) == headCount) {
                 condition = false;
             }
+            Thread.sleep(1000);
         }
         return "ok";
         
     }
 
-    private List<String> rankListAdd(RankDto rankDto) {
+    // private List<String> rankListAdd(RankDto rankDto) {
         
-        List<RankDto> rankDtoList = mainMapper.findByRank();
+    //     List<RankDto> rankDtoList = mainMapper.findByRank();
         
-        List<String> rankList = new ArrayList<>();
+    //     List<String> rankList = new ArrayList<>();
 
-        if(rankDto.getRankLevel()==1) {
-            rankList.add(rankDtoList.get(1).getRankName());
-        }
-        else if(rankDto.getRankLevel()==rankDtoList.size()) {
-            rankList.add(rankDtoList.get(rankDtoList.size()-2).getRankName());
-        }
-        else {
-            rankList.add(rankDtoList.get(rankDto.getRankLevel()-2).getRankName());
-            rankList.add(rankDtoList.get(rankDto.getRankLevel()).getRankName());
-        }
-        rankList.add(rankDto.getRankName());
+    //     if(rankDto.getRankLevel()==1) {
+    //         rankList.add(rankDtoList.get(1).getRankName());
+    //     }
+    //     else if(rankDto.getRankLevel()==rankDtoList.size()) {
+    //         rankList.add(rankDtoList.get(rankDtoList.size()-2).getRankName());
+    //     }
+    //     else {
+    //         rankList.add(rankDtoList.get(rankDto.getRankLevel()-2).getRankName());
+    //         rankList.add(rankDtoList.get(rankDto.getRankLevel()).getRankName());
+    //     }
+    //     rankList.add(rankDto.getRankName());
 
-        return rankList;
-    }
+    //     return rankList;
+    // }
 
     // all team 생성
     private void teamCreate(String teamName, UserAllDto userAllDto) throws JsonProcessingException {
@@ -730,9 +771,9 @@ public class MainService {
         UserAllDto userAllDto = new UserAllDto();
         UserPositionDto userPositionDto = new UserPositionDto();
         if(rankContain) {
-            userAllDto = mainMapper.findByAllUserId(userId);
-            rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
-            position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
+        userAllDto = mainMapper.findByAllUserId(userId);
+        rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
+        position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
         }
         else {
             userPositionDto = mainMapper.findByPositionUserId(userId);
@@ -752,8 +793,8 @@ public class MainService {
                             teamCreate(teamName, userPositionDto);
                         }
                         else {
-                            teamName = rank+"_"+min+"_"+max+"_"+uuid;
-                            teamCreate(teamName, userAllDto);
+                        teamName = rank+"_"+min+"_"+max+"_"+uuid;
+                        teamCreate(teamName, userAllDto);
                         }
                         log.info("일치하는 mmr이 있으나 포지션이 없어서 팀 새로 생성");
                         hashOperations.put("position:"+teamName, position, "1");
@@ -772,7 +813,7 @@ public class MainService {
                         teamCreate(teamName, userPositionDto);
                     }
                     else {
-                        teamCreate(teamName, userAllDto);
+                    teamCreate(teamName, userAllDto);
                     }
                     hashOperations.put("position:"+teamName, position, "2");
                     return teamName;
@@ -785,7 +826,7 @@ public class MainService {
                     teamCreate(teamName, userPositionDto);
                 }
                 else {
-                    teamCreate(teamName, userAllDto);
+                teamCreate(teamName, userAllDto);
                 }
                 hashOperations.put("position:"+teamName, position, "1");
                 return teamName;
