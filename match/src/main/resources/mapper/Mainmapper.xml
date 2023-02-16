@@ -4,9 +4,24 @@
 <mapper namespace="com.lol.match.main.mapper.MainMapper">
 
     <!-- 코드 테스트시 원하는 SETTING_ID 값으로 변경 -->
-    <select id="findBySettingId" resultType="com.lol.match.main.model.SettingDto">
+    <select id="findBySettingAllId" resultType="com.lol.match.main.model.SettingDto">
+        SELECT * FROM TB_SETTING ts 
+        WHERE ts.SETTING_ID = 1
+    </select>
+
+    <select id="findBySettingMmrId" resultType="com.lol.match.main.model.SettingDto">
         SELECT * FROM TB_SETTING ts 
         WHERE ts.SETTING_ID = 2
+    </select>
+
+    <select id="findBySettingPositionId" resultType="com.lol.match.main.model.SettingDto">
+        SELECT * FROM TB_SETTING ts 
+        WHERE ts.SETTING_ID = 3
+    </select>
+
+    <select id="findBySettingRankId" resultType="com.lol.match.main.model.SettingDto">
+        SELECT * FROM TB_SETTING ts 
+        WHERE ts.SETTING_ID = 4
     </select>
 
     <select id="findByAllUserId" resultType="com.lol.match.main.model.UserAllDto">

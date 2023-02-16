@@ -11,12 +11,12 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupMatchDto {
+public class GroupMatchRankDto {
 
     private String userInfo;
 
-    private List<UserAllDto> teamAList;
+    private List<UserRankDto> teamAList;
 
-    private List<UserAllDto> teamBList;
+    private List<UserRankDto> teamBList;
 
 }

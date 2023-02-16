@@ -16,7 +16,13 @@ import com.lol.match.main.model.UserRankDto;
 @Mapper
 public interface MainMapper {
 
-    SettingDto findBySettingId();
+    SettingDto findBySettingAllId();
+
+    SettingDto findBySettingMmrId();
+
+    SettingDto findBySettingPositionId();
+
+    SettingDto findBySettingRankId();
 
     UserAllDto findByAllUserId(@Param("userId")int userId);
 
