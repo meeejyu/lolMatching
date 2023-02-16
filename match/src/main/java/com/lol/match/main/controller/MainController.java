@@ -74,16 +74,6 @@ public class MainController {
 
     }
 
-    // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행
-    @DeleteMapping("/match/mmr/delete/{listName}")
-    @ResponseBody
-    public String deleteMmr(@PathVariable String listName) {
-        
-        mainService.deleteMatchInfoMmrRank(listName);
-        mainService.deleteMatchAll(listName);
-
-        return "ok";
-    }
     // MMR 매칭 end -----------
 
 
@@ -129,16 +119,6 @@ public class MainController {
 
     }
 
-    // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행
-    @DeleteMapping("/match/All/delete/{listName}")
-    @ResponseBody
-    public String deleteAll(@PathVariable String listName) {
-        
-        mainService.deleteMatchInfoAllPosition(listName);
-        mainService.deleteMatchAll(listName);
-
-        return "ok";
-    }
     // All(포지션, 랭크, MMR) 매칭 end -----------
 
 
