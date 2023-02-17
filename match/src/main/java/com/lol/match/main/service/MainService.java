@@ -706,7 +706,7 @@ public class MainService {
         }
     }
 
-    // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
+    // 팀 배정 정보 및 본인이 속한 팀 정보 주기
     public GroupMatchAllDto matchCompleteUserAll(int userId, String teamName) throws Exception {
     
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -1035,7 +1035,7 @@ public class MainService {
         }
     }
 
-    // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
+    // 팀 배정 정보 및 본인이 속한 팀 정보 주기
     public GroupMatchPositionDto matchCompleteUserPosition(int userId, String teamName) throws Exception {
     
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -1342,7 +1342,7 @@ public class MainService {
         }
     }
 
-    // 팀 배정 정보 및 본인이 속한 팀 정보 주기, 에외 처리 고민
+    // 팀 배정 정보 및 본인이 속한 팀 정보 주기
     public GroupMatchRankDto matchCompleteUserRank(int userId, String teamName) throws Exception {
     
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
