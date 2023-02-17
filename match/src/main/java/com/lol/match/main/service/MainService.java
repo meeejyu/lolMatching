@@ -251,18 +251,21 @@ public class MainService {
 
         List<UserMmrDto> userListA = new ArrayList<>();
 
+        List<UserMmrDto> userListAll = new ArrayList<>();
+
         List<UserMmrDto> userListB = new ArrayList<>();
 
         // mmr 나누기
         for(Object key : map.keySet() ){
             UserMmrDto user = objectMapper.readValue(map.get(key).toString(), UserMmrDto.class);
-            userListA.add(user);
+            userListAll.add(user);
         }
 
+        userListA.add(userListAll.get(0));
         HashMap<Integer, List<List<UserMmrDto>>> teamResult = new HashMap<>();
 
         // A팀 - B팀의 값이 최솟값일 경우 팀 매칭
-        mmrCombi(teamResult, userListA, userListB, headCount);
+        mmrCombi(teamResult, userListAll, userListA, userListB, headCount, 1);
 
         for(Integer key : teamResult.keySet()) {
             for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
@@ -275,59 +278,55 @@ public class MainService {
         }
     }
 
-    private void mmrCombi(HashMap<Integer, List<List<UserMmrDto>>> teamResult, List<UserMmrDto> userListA, List<UserMmrDto> userListB, int count) {
+    private void mmrCombi(HashMap<Integer, List<List<UserMmrDto>>> teamResult, List<UserMmrDto> userListAll,List<UserMmrDto> userListA, List<UserMmrDto> userListB, int headCount, int count) {
         
-        if(count == 0) {
-            int sumA = 0;
-            int sumB = 0;
-            List<List<UserMmrDto>> teamList = new ArrayList<>();
-            List<UserMmrDto> userA = new ArrayList<>();
-            List<UserMmrDto> userB = new ArrayList<>();
-
-            for (int i = 0; i < userListA.size(); i++) {
-                sumA += userListA.get(i).getUserMmr();
-                sumB += userListB.get(i).getUserMmr();
-                userB.add(userListB.get(i));
-                userA.add(userListA.get(i));
-            }
-
-            int sumDif = Math.abs(sumA - sumB);
-            
-            teamList.add(userA);
-            teamList.add(userB);
-
-            log.info("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
-
-            for(Integer key : teamResult.keySet() ){
-                if(key > sumDif) {
-                    teamResult.remove(key);
-                    teamResult.put(sumDif, teamList);
-                }
-                if(sumDif==0) {
-                    return;
-                }
-            }
-            if(teamResult.size() == 0) {
-                teamResult.put(sumDif, teamList);
+        if(headCount-2 > 0) {
+            for (int i = count; i < userListAll.size()-headCount+2; i++) {
+                userListA.add(userListAll.get(i));
+                mmrCombi(teamResult, userListAll, userListA, userListB, headCount-1, i+1);
+                userListA.remove(userListAll.get(i));
             }
         }
         else {
-            // TODO : 다시 한번 보기
-            for (int i = 0; i < userListA.size(); i++) {
-                List<UserMmrDto> newUesrListA = new ArrayList<>();
-                List<UserMmrDto> newUesrListB = new ArrayList<>();
-                for (int j = 0; j < userListB.size(); j++) {
-                    newUesrListB.add(userListB.get(j));
+            for (int i = count; i < userListAll.size(); i++) {
+                userListA.add(userListAll.get(i));
+                for (int j = 0; j < userListAll.size(); j++) {
+                    if(userListA.contains(userListAll.get(j))==false) {
+                        userListB.add(userListAll.get(j));
+                    }
                 }
+                // System.out.println("userListA : "+userListA.toString()+" / userListB : "+userListB.toString());
+                int sumA = 0;
+                int sumB = 0;
+                List<List<UserMmrDto>> teamList = new ArrayList<>();
+                List<UserMmrDto> userA = new ArrayList<>();
+                List<UserMmrDto> userB = new ArrayList<>();
+
                 for (int j = 0; j < userListA.size(); j++) {
-                    if(i==j) {
-                        newUesrListB.add(userListA.get(i));
+                    sumA += userListA.get(j).getUserMmr();
+                    sumB += userListB.get(j).getUserMmr();
+                    userA.add(userListA.get(j));
+                    userB.add(userListB.get(j));
+                }
+                int sumDif = Math.abs(sumA - sumB);
+
+                teamList.add(userA);
+                teamList.add(userB);
+                
+                for(Integer key : teamResult.keySet() ){
+                    if(key > sumDif) {
+                        teamResult.remove(key);
+                        teamResult.put(sumDif, teamList);
                     }
-                    else {
-                        newUesrListA.add(userListA.get(j));
+                    if(sumDif==0) {
+                        return;
                     }
                 }
-                mmrCombi(teamResult, newUesrListA, newUesrListB, count-1);
+                if(teamResult.size() == 0) {
+                    teamResult.put(sumDif, teamList);
+                }
+                userListB.clear();
+                userListA.remove(userListAll.get(i));
             }
         }
     }
@@ -1263,18 +1262,21 @@ public class MainService {
 
         List<UserRankDto> userListA = new ArrayList<>();
 
+        List<UserRankDto> userListAll = new ArrayList<>();
+
         List<UserRankDto> userListB = new ArrayList<>();
 
         // mmr 나누기
         for(Object key : map.keySet() ){
             UserRankDto user = objectMapper.readValue(map.get(key).toString(), UserRankDto.class);
-            userListA.add(user);
+            userListAll.add(user);
         }
 
+        userListA.add(userListAll.get(0));
         HashMap<Integer, List<List<UserRankDto>>> teamResult = new HashMap<>();
 
         // A팀 - B팀의 값이 최솟값일 경우 팀 매칭
-        rankCombi(teamResult, userListA, userListB, headCount);
+        rankCombi(teamResult, userListAll, userListA, userListB, headCount, 1);
 
         for(Integer key : teamResult.keySet()) {
             for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
@@ -1287,59 +1289,55 @@ public class MainService {
         }
     }
 
-    private void rankCombi(HashMap<Integer, List<List<UserRankDto>>> teamResult, List<UserRankDto> userListA, List<UserRankDto> userListB, int count) {
+    private void rankCombi(HashMap<Integer, List<List<UserRankDto>>> teamResult, List<UserRankDto> userListAll,List<UserRankDto> userListA, List<UserRankDto> userListB, int headCount, int count) {
         
-        if(count == 0) {
-            int sumA = 0;
-            int sumB = 0;
-            List<List<UserRankDto>> teamList = new ArrayList<>();
-            List<UserRankDto> userA = new ArrayList<>();
-            List<UserRankDto> userB = new ArrayList<>();
-
-            for (int i = 0; i < userListA.size(); i++) {
-                sumA += userListA.get(i).getUserMmr();
-                sumB += userListB.get(i).getUserMmr();
-                userB.add(userListB.get(i));
-                userA.add(userListA.get(i));
-            }
-
-            int sumDif = Math.abs(sumA - sumB);
-            
-            teamList.add(userA);
-            teamList.add(userB);
-
-            log.info("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
-
-            for(Integer key : teamResult.keySet() ){
-                if(key > sumDif) {
-                    teamResult.remove(key);
-                    teamResult.put(sumDif, teamList);
-                }
-                if(sumDif==0) {
-                    return;
-                }
-            }
-            if(teamResult.size() == 0) {
-                teamResult.put(sumDif, teamList);
+        if(headCount-2 > 0) {
+            for (int i = count; i < userListAll.size()-headCount+2; i++) {
+                userListA.add(userListAll.get(i));
+                rankCombi(teamResult, userListAll, userListA, userListB, headCount-1, i+1);
+                userListA.remove(userListAll.get(i));
             }
         }
         else {
-            // TODO : 다시 한번 보기
-            for (int i = 0; i < userListA.size(); i++) {
-                List<UserRankDto> newUesrListA = new ArrayList<>();
-                List<UserRankDto> newUesrListB = new ArrayList<>();
-                for (int j = 0; j < userListB.size(); j++) {
-                    newUesrListB.add(userListB.get(j));
+            for (int i = count; i < userListAll.size(); i++) {
+                userListA.add(userListAll.get(i));
+                for (int j = 0; j < userListAll.size(); j++) {
+                    if(userListA.contains(userListAll.get(j))==false) {
+                        userListB.add(userListAll.get(j));
+                    }
                 }
+                // System.out.println("userListA : "+userListA.toString()+" / userListB : "+userListB.toString());
+                int sumA = 0;
+                int sumB = 0;
+                List<List<UserRankDto>> teamList = new ArrayList<>();
+                List<UserRankDto> userA = new ArrayList<>();
+                List<UserRankDto> userB = new ArrayList<>();
+
                 for (int j = 0; j < userListA.size(); j++) {
-                    if(i==j) {
-                        newUesrListB.add(userListA.get(i));
+                    sumA += userListA.get(j).getUserMmr();
+                    sumB += userListB.get(j).getUserMmr();
+                    userA.add(userListA.get(j));
+                    userB.add(userListB.get(j));
+                }
+                int sumDif = Math.abs(sumA - sumB);
+
+                teamList.add(userA);
+                teamList.add(userB);
+                
+                for(Integer key : teamResult.keySet() ){
+                    if(key > sumDif) {
+                        teamResult.remove(key);
+                        teamResult.put(sumDif, teamList);
                     }
-                    else {
-                        newUesrListA.add(userListA.get(j));
+                    if(sumDif==0) {
+                        return;
                     }
                 }
-                rankCombi(teamResult, newUesrListA, newUesrListB, count-1);
+                if(teamResult.size() == 0) {
+                    teamResult.put(sumDif, teamList);
+                }
+                userListB.clear();
+                userListA.remove(userListAll.get(i));
             }
         }
     }

@@ -143,7 +143,6 @@ public class MainController {
     }
 
     // 대전 매칭 완료 된 이후 수락하기 
-    // TODO : 여기부터 다시
     @PostMapping("/match/position/accept")
     @ResponseBody
     public HashMap<String, String> matchAcceptPosition(@RequestParam int userId) throws Exception {
