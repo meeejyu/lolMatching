@@ -580,7 +580,8 @@ public class MainService {
             result.put("code", "fail");
             result.put("message", "수락하지 않은 유저가 있습니다. 다시 대기열로 돌아갑니다.");
             Long afterSize = hashOperations.size("accept:"+teamName);
-            if(beforeSize==afterSize) {
+            // TODO 해당 코드 수정 필요
+            if(userId==1) {
 
                 Map<Object, Object> userMap = hashOperations.entries("match:"+teamName);
 
@@ -1537,6 +1538,7 @@ public class MainService {
         }
     }
 
+    // matchAll
     // 매칭 진행 : 팀 사이즈 확인, 정원이 다 차면 메소드 탈출
     private String teamCheck(Long size, String listName, String id, int headCount, int count) throws InterruptedException, JsonMappingException, JsonProcessingException {
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();

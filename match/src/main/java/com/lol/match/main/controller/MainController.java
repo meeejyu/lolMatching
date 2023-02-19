@@ -250,8 +250,8 @@ public class MainController {
         System.out.println("count : " + count);
         if(count < 7) {
             // result = mainService.matchUserMmr(count);
-            // result = mainService.matchUserAll(count);
-            result = mainService.matchUserPosition(count);
+            result = mainService.matchUserAll(count);
+            // result = mainService.matchUserPosition(count);
             // result = mainService.matchUserRank(count);
         }
         if(count == 7) {
@@ -272,8 +272,8 @@ public class MainController {
         System.out.println("count : " + count);
         if(count < 7) {
             // result = mainService.matchAcceptUserMmr(count);
-            // result = mainService.matchAcceptUserAll(count);
-            result = mainService.matchAcceptUserPosition(count);
+            result = mainService.matchAcceptUserAll(count);
+            // result = mainService.matchAcceptUserPosition(count);
             // result = mainService.matchAcceptUserRank(count);
         }
         if(count == 7) {
