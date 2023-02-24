@@ -608,14 +608,14 @@ public class MainService {
 
         List<PositionDto> positionAllList = mainMapper.findByPosition();
 
-        Map<Object, Object> map = hashOperations.entries("accept:"+teamName);
+        Map<Object, Object> acceptMap = hashOperations.entries("accept:"+teamName);
 
         List<List<UserAllDto>> userPositionList = new ArrayList<>(); 
 
         // postion이랑 mmr 얻어와서 비교하기
         for (int i = 0; i < positionAllList.size(); i++) {
-            for(Object key : map.keySet()){
-                UserAllDto user = objectMapper.readValue(map.get(key).toString(), UserAllDto.class);
+            for(Object key : acceptMap.keySet()){
+                UserAllDto user = objectMapper.readValue(acceptMap.get(key).toString(), UserAllDto.class);
                 if(user.getPositionId()==positionAllList.get(i).getPositionId()) {
                     if(userPositionList.size() > i) {
                         userPositionList.get(i).add(user);
@@ -937,14 +937,14 @@ public class MainService {
 
         List<PositionDto> positionAllList = mainMapper.findByPosition();
 
-        Map<Object, Object> map = hashOperations.entries("accept:"+teamName);
+        Map<Object, Object> acceptMap = hashOperations.entries("accept:"+teamName);
 
         List<List<UserPositionDto>> userPositionList = new ArrayList<>(); 
 
         // postion이랑 mmr 얻어와서 비교하기
         for (int i = 0; i < positionAllList.size(); i++) {
-            for(Object key : map.keySet()){
-                UserPositionDto user = objectMapper.readValue(map.get(key).toString(), UserPositionDto.class);
+            for(Object key : acceptMap.keySet()){
+                UserPositionDto user = objectMapper.readValue(acceptMap.get(key).toString(), UserPositionDto.class);
                 if(user.getPositionId()==positionAllList.get(i).getPositionId()) {
                     if(userPositionList.size() > i) {
                         userPositionList.get(i).add(user);
