@@ -653,36 +653,36 @@ public class MainService {
             int sumA = 0;
             int sumB = 0;
             List<List<UserAllDto>> teamList = new ArrayList<>();
-            List<UserAllDto> userA = new ArrayList<>();
-            List<UserAllDto> userB = new ArrayList<>();
-
+            if(userInfoA.size()!=userInfoB.size()) {
+                log.info("에러 리스트 확인 : A 리스트 : {}, B 리스트 : {}", userInfoA.toString(), userInfoB.toString());
+                throw new BusinessLogicException(ExceptionCode.SERVER_ERROR);
+            }
             for (int i = 0; i < userInfoA.size(); i++) {
                 sumA += userInfoA.get(i).getUserMmr();
                 sumB += userInfoB.get(i).getUserMmr();
-                userA.add(userInfoA.get(i));
-                userB.add(userInfoB.get(i));
             }
             int sumDif = Math.abs(sumA - sumB);
            
-            teamList.add(userA);
-            teamList.add(userB);
+            teamList.add(userInfoA);
+            teamList.add(userInfoB);
 
             log.info("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
 
-            for(Integer key : teamResult.keySet()){
-                if(key > sumDif) {
-                    teamResult.clear();
-                    teamResult.put(sumDif, teamList);
-                }
-                if(sumDif==0) {
-                    return;
-                }
-            }
             if(teamResult.size() == 0) {
                 teamResult.put(sumDif, teamList);
+                return;
             }
-            userInfoA.clear();
-            userInfoB.clear();
+            else {
+                for(Integer key : teamResult.keySet()){
+                    if(key > sumDif) {
+                        teamResult.clear();
+                        teamResult.put(sumDif, teamList);
+                    }
+                    if(sumDif==0) {
+                        return;
+                    }
+                }
+            }
         }
         else {
             for (int i = 0; i < userPositionList.get(count).size(); i++) {
