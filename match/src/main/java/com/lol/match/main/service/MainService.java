@@ -267,15 +267,15 @@ public class MainService {
         // A팀 - B팀의 값이 최솟값일 경우 팀 매칭
         mmrCombi(teamResult, userListAll, userListA, userListB, headCount, 1);
 
-        for(Integer key : teamResult.keySet()) {
-            for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
-                UserMmrDto userMmrDtoA = teamResult.get(key).get(0).get(i);
-                UserMmrDto userMmrDtoB = teamResult.get(key).get(1).get(i);
-                hashOperations.put("teamA:"+teamName, Integer.toString(userMmrDtoA.getUserId()), objectMapper.writeValueAsString(userMmrDtoA));
-                hashOperations.put("teamB:"+teamName, Integer.toString(userMmrDtoB.getUserId()), objectMapper.writeValueAsString(userMmrDtoB));
+            for(Integer key : teamResult.keySet()) {
+                for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
+                    UserMmrDto userMmrDtoA = teamResult.get(key).get(0).get(i);
+                    UserMmrDto userMmrDtoB = teamResult.get(key).get(1).get(i);
+                    hashOperations.put("teamA:"+teamName, Integer.toString(userMmrDtoA.getUserId()), objectMapper.writeValueAsString(userMmrDtoA));
+                    hashOperations.put("teamB:"+teamName, Integer.toString(userMmrDtoB.getUserId()), objectMapper.writeValueAsString(userMmrDtoB));
+                }
+                log.info("최종값 : " + key);
             }
-            log.info("최종값 : " + key);
-        }
     }
 
     private void mmrCombi(HashMap<Integer, List<List<UserMmrDto>>> teamResult, List<UserMmrDto> userListAll,List<UserMmrDto> userListA, List<UserMmrDto> userListB, int headCount, int count) {
@@ -284,7 +284,7 @@ public class MainService {
             for (int i = count; i < userListAll.size()-headCount+2; i++) {
                 userListA.add(userListAll.get(i));
                 mmrCombi(teamResult, userListAll, userListA, userListB, headCount-1, i+1);
-                userListA.remove(userListAll.get(i));
+                    userListA.remove(userListAll.get(i));                    
             }
         }
         else {
@@ -309,6 +309,8 @@ public class MainService {
                     userB.add(userListB.get(j));
                 }
                 int sumDif = Math.abs(sumA - sumB);
+
+                log.info("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
 
                 teamList.add(userA);
                 teamList.add(userB);
@@ -982,19 +984,18 @@ public class MainService {
             int sumA = 0;
             int sumB = 0;
             List<List<UserPositionDto>> teamList = new ArrayList<>();
-            List<UserPositionDto> userA = new ArrayList<>();
-            List<UserPositionDto> userB = new ArrayList<>();
-
+            if(userInfoA.size()!=userInfoB.size()) {
+                log.info("에러 리스트 확인 : A 리스트 : {}, B 리스트 : {}", userInfoA.toString(), userInfoB.toString());
+                throw new BusinessLogicException(ExceptionCode.SERVER_ERROR);
+            }
             for (int i = 0; i < userInfoA.size(); i++) {
                 sumA += userInfoA.get(i).getUserMmr();
                 sumB += userInfoB.get(i).getUserMmr();
-                userA.add(userInfoA.get(i));
-                userB.add(userInfoB.get(i));
             }
             int sumDif = Math.abs(sumA - sumB);
            
-            teamList.add(userA);
-            teamList.add(userB);
+            teamList.add(userInfoA);
+            teamList.add(userInfoB);
 
             log.info("합A : " + sumA + " 합B : " + sumB + " 차이 : "+sumDif);
 
@@ -1010,8 +1011,6 @@ public class MainService {
             if(teamResult.size() == 0) {
                 teamResult.put(sumDif, teamList);
             }
-            userInfoA.clear();
-            userInfoB.clear();
         }
         else {
             for (int i = 0; i < userPositionList.get(count).size(); i++) {
