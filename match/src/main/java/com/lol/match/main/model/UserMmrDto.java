@@ -17,4 +17,10 @@ public class UserMmrDto {
     public void setTeamName(String teamName) {
         this.teamName = teamName;
     }
+
+    // public UserMmrDto(int userId, int userMmr) {
+    //     this.userId = userId;
+    //     this.userMmr = userMmr;
+    // }
+
 }
