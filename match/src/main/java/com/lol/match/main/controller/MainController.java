@@ -248,16 +248,57 @@ public class MainController {
         HashMap<String, String> result = new HashMap<>();
         count += 1;
         System.out.println("count : " + count);
-        if(count < 7) {
-            // result = mainService.matchUserMmr(count);
-            result = mainService.matchUserAll(count);
+
+        // if(count < 3) {
+        //     // result = mainService.matchUserMmr(count);
+        //     // result = mainService.matchUserAll(count);
+        //     result = mainService.matchUserPosition(count);
+        //     // result = mainService.matchUserRank(count);
+        // }
+        // if(count == 3) {
+        //     count = 0;
+        // }
+
+        // if(count < 5) {
+        //     // result = mainService.matchUserMmr(count);
+        //     // result = mainService.matchUserAll(count);
+        //     result = mainService.matchUserPosition(count);
+        //     // result = mainService.matchUserRank(count);
+        // }
+        // if(count == 5) {
+        //     count = 0;
+        // }
+
+        // if(count < 7) {
+        //     // result = mainService.matchUserMmr(count);
+        //     // result = mainService.matchUserAll(count);
+        //     result = mainService.matchUserPosition(count);
+        //     // result = mainService.matchUserRank(count);
+        // }
+        // if(count == 7) {
+        //     count = 0;
+        // }
+        
+        // if(count < 9) {
+        //     // result = mainService.matchUserMmr(count);
+        //     // result = mainService.matchUserAll(count);
+        //     result = mainService.matchUserPosition(count);
+        //     // result = mainService.matchUserRank(count);
+        // }
+        // if(count == 9) {
+        //     count = 0;
+        // }
+
+        if(count < 13) {
+            result = mainService.matchUserMmr(count);
+            // result = mainService.matchUserAll(count);
             // result = mainService.matchUserPosition(count);
             // result = mainService.matchUserRank(count);
         }
-        if(count == 7) {
+        if(count == 13) {
             count = 0;
         }
-        
+
         return result;
     }
 
@@ -270,15 +311,57 @@ public class MainController {
         HashMap<String, String> result = new HashMap<>();
         count += 1;
         System.out.println("count : " + count);
-        if(count < 7) {
-            // result = mainService.matchAcceptUserMmr(count);
-            result = mainService.matchAcceptUserAll(count);
+
+        // if(count < 3) {
+        //     // result = mainService.matchAcceptUserMmr(count);
+        //     // result = mainService.matchAcceptUserAll(count);
+        //     result = mainService.matchAcceptUserPosition(count);
+        //     // result = mainService.matchAcceptUserRank(count);
+        // }
+        // if(count == 3) {
+        //     count = 0;
+        // }
+
+        // if(count < 5) {
+        //     // result = mainService.matchAcceptUserMmr(count);
+        //     // result = mainService.matchAcceptUserAll(count);
+        //     result = mainService.matchAcceptUserPosition(count);
+        //     // result = mainService.matchAcceptUserRank(count);
+        // }
+        // if(count == 5) {
+        //     count = 0;
+        // }
+
+        // if(count < 7) {
+        //     // result = mainService.matchAcceptUserMmr(count);
+        //     // result = mainService.matchAcceptUserAll(count);
+        //     result = mainService.matchAcceptUserPosition(count);
+        //     // result = mainService.matchAcceptUserRank(count);
+        // }
+        // if(count == 7) {
+        //     count = 0;
+        // }
+
+        // if(count < 9) {
+        //     // result = mainService.matchAcceptUserMmr(count);
+        //     // result = mainService.matchAcceptUserAll(count);
+        //     result = mainService.matchAcceptUserPosition(count);
+        //     // result = mainService.matchAcceptUserRank(count);
+        // }
+        // if(count == 9) {
+        //     count = 0;
+        // }
+
+        if(count < 13) {
+            result = mainService.matchAcceptUserMmr(count);
+            // result = mainService.matchAcceptUserAll(count);
             // result = mainService.matchAcceptUserPosition(count);
             // result = mainService.matchAcceptUserRank(count);
         }
-        if(count == 7) {
+        if(count == 13) {
             count = 0;
         }
+
         System.out.println("최종결과 : "+result.toString());
         
         return result;
