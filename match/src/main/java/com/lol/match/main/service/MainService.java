@@ -309,9 +309,6 @@ public class MainService {
                         teamResult.remove(key);
                         teamResult.put(sumDif, teamList);
                     }
-                    if(sumDif==0) {
-                        return;
-                    }
                 }
             } 
         }
@@ -681,16 +678,12 @@ public class MainService {
             
             if(teamResult.size() == 0) {
                 teamResult.put(sumDif, teamList);
-                return;
             }
             else {
                 for(Integer key : teamResult.keySet()){
                     if(key > sumDif) {
                         teamResult.clear();
                         teamResult.put(sumDif, teamList);
-                    }
-                    if(sumDif==0) {
-                        return;
                     }
                 }
             }
@@ -981,14 +974,14 @@ public class MainService {
     }
 
     private void positionCombi(List<UserPositionDto> userInfoA, int count, 
-    List<List<UserPositionDto>> userPositionList, HashMap<Integer, List<List<UserPositionDto>>> teamResult, int headCount) {
+        List<List<UserPositionDto>> userPositionList, HashMap<Integer, List<List<UserPositionDto>>> teamResult, int headCount) {
         
         if(count == headCount) {
             List<UserPositionDto> userInfoB = new ArrayList<>();
 
             for (int i = 0; i < userInfoA.size(); i++) {
                 for (int j = 0; j < userPositionList.get(i).size(); j++) {
-                    if(userInfoA.get(i)!=userPositionList.get(i).get(j)) {
+                    if(userInfoA.contains(userPositionList.get(i).get(j))==false) {
                         userInfoB.add(userPositionList.get(i).get(j));
                     }
                 }
@@ -1014,16 +1007,12 @@ public class MainService {
             
             if(teamResult.size() == 0) {
                 teamResult.put(sumDif, teamList);
-                return;
             }
             else {
                 for(Integer key : teamResult.keySet()){
                     if(key > sumDif) {
                         teamResult.clear();
                         teamResult.put(sumDif, teamList);
-                    }
-                    if(sumDif==0) {
-                        return;
                     }
                 }
             }
@@ -1329,9 +1318,6 @@ public class MainService {
                     if(key > sumDif) {
                         teamResult.remove(key);
                         teamResult.put(sumDif, teamList);
-                    }
-                    if(sumDif==0) {
-                        return;
                     }
                 }
             } 
