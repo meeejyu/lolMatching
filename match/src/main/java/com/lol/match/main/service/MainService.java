@@ -652,7 +652,7 @@ public class MainService {
 
             for (int i = 0; i < userInfoA.size(); i++) {
                 for (int j = 0; j < userPositionList.get(i).size(); j++) {
-                    if(userInfoA.get(i)!=userPositionList.get(i).get(j)) {
+                    if(userInfoA.contains(userPositionList.get(i).get(j))==false) {
                         userInfoB.add(userPositionList.get(i).get(j));
                     }
                 }
