@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -61,7 +61,8 @@ public class MainService {
     private HashMap<String, String> mmrIsMap(int userId, SettingDto settingDto) throws JsonProcessingException, InterruptedException, ParseException {
 
         HashMap<String, String> result = new HashMap<>();
-        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -80,8 +81,8 @@ public class MainService {
             int min = mmr - range > 0 ? mmr - range : 0;
             int max = mmr + range;
 
-            Long listSize = operations.opsForList().size("teamList");
-            List<Object> teamList = operations.opsForList().range("teamList", 0, listSize-1);
+            Long listSize = listOperations.size("teamList");
+            List<Object> teamList = listOperations.range("teamList", 0, listSize-1);
 
             for(Object key : teamList) {
                 
@@ -102,7 +103,7 @@ public class MainService {
                 String uuid = UUID.randomUUID().toString();
                 teamName = min+"_"+max+"_"+uuid;
                 teamCreate(teamName, userMmrDto);
-                redisTemplate.opsForList().rightPush("teamList", teamName);
+                listOperations.rightPush("teamList", teamName);
             }
             result = teamAddResult(id, teamName, settingDto);
 
@@ -388,7 +389,7 @@ public class MainService {
     private HashMap<String, String> allIsMap(int userId, SettingDto settingDto) throws Exception {
 
         HashMap<String, String> result = new HashMap<>();
-        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
         
@@ -413,8 +414,8 @@ public class MainService {
             List<String> rankList = new ArrayList<>();
             
             // Redis Data List 출력
-            Long listSize = operations.opsForList().size("teamList");
-            List<Object> teamList = operations.opsForList().range("teamList", 0, listSize-1);
+            Long listSize = listOperations.size("teamList");
+            List<Object> teamList = listOperations.range("teamList", 0, listSize-1);
 
             // 랭크 계급 설정
             rankList = rankListAdd(rankdto, teamList, settingDto);
@@ -443,7 +444,7 @@ public class MainService {
                 teamName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
                 teamCreate(teamName, userAllDto);
                 hashOperations.put("position:"+teamName, position, "1");
-                redisTemplate.opsForList().rightPush("teamList", teamName);
+                listOperations.rightPush("teamList", teamName);
     
             }
             result = teamAddResult(id, teamName, settingDto);
@@ -766,7 +767,7 @@ public class MainService {
 
         HashMap<String, String> result = new HashMap<>();
 
-        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -789,8 +790,8 @@ public class MainService {
 
             List<String> positionList = new ArrayList<>();
 
-            Long listSize = operations.opsForList().size("teamList");
-            List<Object> teamList = operations.opsForList().range("teamList", 0, listSize-1);
+            Long listSize = listOperations.size("teamList");
+            List<Object> teamList = listOperations.range("teamList", 0, listSize-1);
 
             for(Object key : teamList) {
                 if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
@@ -813,7 +814,7 @@ public class MainService {
                 teamName = min+"_"+max+"_"+uuid;
                 teamCreate(teamName, userPositionDto);
                 hashOperations.put("position:"+teamName, position, "1");
-                redisTemplate.opsForList().rightPush("teamList", teamName);
+                listOperations.rightPush("teamList", teamName);
             }
 
             result = teamAddResult(id, teamName, settingDto);
@@ -1093,7 +1094,8 @@ public class MainService {
     private HashMap<String, String> rankIsMap(int userId, SettingDto settingDto) throws JsonMappingException, JsonProcessingException, InterruptedException, ParseException {
 
         HashMap<String, String> result = new HashMap<>();
-        RedisOperations<String, Object> operations = redisTemplate.opsForList().getOperations();
+        
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -1114,8 +1116,8 @@ public class MainService {
     
             RankDto rankdto = mainMapper.findByRankId(userRankDto.getRankId());
 
-            Long listSize = operations.opsForList().size("teamList");
-            List<Object> teamList = operations.opsForList().range("teamList", 0, listSize-1);
+            Long listSize = listOperations.size("teamList");
+            List<Object> teamList = listOperations.range("teamList", 0, listSize-1);
 
             // 랭크 계급 설정 및 랭크 필터링
             List<String> rankList = rankListAdd(rankdto, teamList, settingDto);
@@ -1138,7 +1140,7 @@ public class MainService {
                 String uuid = UUID.randomUUID().toString();
                 teamName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
                 teamCreate(teamName, userRankDto);
-                redisTemplate.opsForList().rightPush("teamList", teamName);
+                listOperations.rightPush("teamList", teamName);
             }
             result = teamAddResult(id, teamName, settingDto);
 
@@ -1607,6 +1609,8 @@ public class MainService {
     // 포지션 확인
     private String positionCheck(List<String> positionList, int userId, int min, int max) throws JsonProcessingException {
 
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
+
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
         UserPositionDto userPositionDto = mainMapper.findByPositionUserId(userId);
@@ -1625,7 +1629,7 @@ public class MainService {
                         
                         log.info("일치하는 mmr이 있으나 포지션이 없어서 팀 새로 생성");
                         hashOperations.put("position:"+teamName, position, "1");
-                        redisTemplate.opsForList().rightPush("teamList", teamName);
+                        listOperations.rightPush("teamList", teamName);
                         return teamName;
                     }
                 }
@@ -1654,6 +1658,8 @@ public class MainService {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
+
         UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
         String rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
         String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
@@ -1671,7 +1677,7 @@ public class MainService {
 
                         log.info("일치하는 mmr이 있으나 포지션이 없어서 팀 새로 생성");
                         hashOperations.put("position:"+teamName, position, "1");
-                        redisTemplate.opsForList().rightPush("teamList", teamName);
+                        listOperations.rightPush("teamList", teamName);
                         return teamName;
                     }
                 }
