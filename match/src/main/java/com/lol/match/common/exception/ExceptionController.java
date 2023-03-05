@@ -18,6 +18,7 @@ public class ExceptionController {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleJwtException(Exception exception) {
         log.info("error class: {} ", exception.getClass());
+        log.info("error class message: {} ", exception.getMessage());
         return ResponseEntity.status(500).body(exception.getMessage());
     }
 
