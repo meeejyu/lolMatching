@@ -113,7 +113,7 @@ ALL 타입 매칭 API
 
 - POSITION 타입 : [POSITION 타입 상세문서](https://wirehaired-waterfall-ea2.notion.site/Matching-POSITION-df194d01522d42b3b52c713637428eba)
 
-### **성과**
+### 💡 성과
 
 - 큐 시스템을 직접 만들어보며, 대기열에 대해 생각해보게 됨
 - 조합 알고리즘을 응용하여 mmr 수치에 따른 공정한 매칭 구현
