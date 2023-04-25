@@ -57,7 +57,7 @@ src/main/java/com/lol/match
     
 ### ERD
 
-<img width="1114" alt="erd" src="https://user-images.githubusercontent.com/112879800/234208908-c18fcbff-1bb2-4e34-9937-3d775ec6c513.png">
+<img width="1202" alt="erd" src="https://user-images.githubusercontent.com/112879800/234280703-5d18dc3e-8598-44c0-9dd9-2721db96f9ab.png">
 
 
 ### API
