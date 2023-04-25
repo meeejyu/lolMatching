@@ -45,10 +45,10 @@ src/main/java/com/lol/match
 │   └── scheduler
 ├── config // redis 설정
 ├── main // 매칭 로직
-│   ├── controller
-│   ├── mapper
-│   ├── model // 매칭 dto
-│   └── service 
+   ├── controller
+   ├── mapper
+   ├── model // 매칭 dto
+   └── service 
         ├── AllPositionService // all타입와 position 타입의 매칭
         └── MmrRankService // mmr타입와 rank 타입의 매칭
 ~~~
