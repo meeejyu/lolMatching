@@ -1,16 +1,16 @@
 # Matching System
 
-### **✅**한줄 소개
+## **✅**한줄 소개
 
 게임 매칭 시스템의 구현
 
 
-### 📖 상세 내용
+## 📖 상세 내용
 
 즐겨하는 게임인 LOL의 매칭 시스템을 직접 만들어 보면 어떨까?해서 만들게된 프로젝트입니다. 팀의 인원, MMR의 격차, 게임 수락 시간 등 원하는 타입(Position, Rank, MMR, All)에 따른 매칭을 시킬수 있습니다. 누구나 쉽게 해당 코드를 풀 받아 커스텀하여 사용할 수 있습니다. 
 
 
-### 📱 구현 기능 (API)
+## 📱 구현 기능 (API)
 
  타입에 따른 매칭 방법 TYPE = [’ALL’, MMR’, ‘POSITION’, ‘RANK’]
     
@@ -29,7 +29,7 @@
         2. 모집이 완료 된 이후 한번 더 회원들에게 수락요청을 한다
         3. 수락이 모두 완료 되면 모집한 인원을 mmr을 고려하여 팀을 나눠준다
         4. 팀 매칭이 완료됨을 알려준다.
-### 🛠️ 사용 기술 및 라이브러리
+## 🛠️ 사용 기술 및 라이브러리
 
 - java
 - Spring Boot, Spring MVC
@@ -37,7 +37,7 @@
 - Gradle
 - MariaDB, redis
 
-### Project Sturucture
+## Project Sturucture
 ~~~
 src/main/java/com/lol/match
 |── common // 공통 컴포넌트(예외와 스케줄러 관리)
@@ -53,14 +53,14 @@ src/main/java/com/lol/match
         └── MmrRankService // mmr타입와 rank 타입의 매칭
 ~~~
 
-### ALL 타입 매칭 사용법
+## ALL 타입 매칭 사용법
     
-#### ERD
-erd.png
+### ERD
+
 <img width="1114" alt="erd" src="https://user-images.githubusercontent.com/112879800/234208908-c18fcbff-1bb2-4e34-9937-3d775ec6c513.png">
 
 
-#### API
+### API
 ALL 타입 매칭 API
 - 매칭 (POST /match/all)
 - 매칭 취소	(POST /match/all/cancel)
@@ -69,8 +69,8 @@ ALL 타입 매칭 API
 - 매칭 완료된 팀 정보 (POST /match/all/complete)
 - 게임 완료 후 팀 정보 삭제	(POST /match/end/{listName})
 
-#### 구현 상세
->  매칭 로직은 다음과 같습니다.
+### 구현 상세
+>  매칭 로직
 >  1. 클라이언트로부터 userId를 보내 매칭 요청을 보낸다.
 >  2. userId를 통해 회원 정보 및 setting 정보를 가져온다
 >     
@@ -86,7 +86,7 @@ ALL 타입 매칭 API
 
 <br>
 
-> 매칭 수락 로직은 다음과 같습니다.
+> 매칭 수락 로직
 >  1. 클라이언트로부터 userId를 보내 매칭 요청을 보낸다.
 >  2. userId를 통해 회원 정보 및 setting 정보, 매칭 최대 수락 시간을 가져온다
 >  3. 매칭 최대 수락 시간이 회원이 수락한 시간보다 적고, 팀원 전체가 수락했을 경우 팀을 배분하고 "success" 메세지를 생성한다. 
@@ -96,7 +96,7 @@ ALL 타입 매칭 API
 
 <br>
 
-> 매칭 알고리즘은 다음과 같습니다.
+> 매칭 알고리즘
 > 1. 팀 정보를 전체 가져온다.
 > 2. 가져온 정보를 토대로 임의로 A팀을 생성한다.
 > 3. A팀에 배정된 회원을 제외한 나머진 회원을 B팀에 추가한다.
