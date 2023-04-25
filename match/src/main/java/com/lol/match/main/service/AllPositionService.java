@@ -472,8 +472,8 @@ public class AllPositionService extends CommonService{
             for(Object key : teamList) {
                 if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
 
-                    String minRange = key.toString().split("_")[0];
-                    String maxRange = key.toString().split("_")[1];
+                    String minRange = key.toString().split("_")[1];
+                    String maxRange = key.toString().split("_")[2];
         
                     if (Integer.parseInt(minRange) <= mmr) {
                         if (Integer.parseInt(maxRange) >= mmr) {

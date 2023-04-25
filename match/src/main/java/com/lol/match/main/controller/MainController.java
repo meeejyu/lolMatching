@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.lol.match.main.model.GroupMatchAllDto;
@@ -39,9 +38,9 @@ public class MainController {
 
 
     // MMR 매칭 start -----------
-    @PostMapping("/match/mmr")
+    @PostMapping("/match/mmr/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchMmr(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchMmr(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = mmrRankService.matchUserMmr(userId);
         
@@ -49,9 +48,9 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/mmr/cancel")
+    @PostMapping("/match/mmr/cancel/{userId}")
     @ResponseBody
-    public HashMap<String, String> teamListDeleteMmr(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> teamListDeleteMmr(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = mmrRankService.teamListDeleteUserMmrRank(userId);
 
@@ -59,9 +58,9 @@ public class MainController {
     }
 
     // 대전 매칭 완료 된 이후 수락하기 
-    @PostMapping("/match/mmr/accept")
+    @PostMapping("/match/mmr/accept/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchAcceptMmr(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchAcceptMmr(@PathVariable int userId) throws Exception {
         
         HashMap<String, String> result = mmrRankService.matchAcceptUserMmr(userId);
 
@@ -69,9 +68,9 @@ public class MainController {
     }
 
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/mmr/complete")
+    @PostMapping("/match/mmr/complete/{userId}/{teamName}")
     @ResponseBody
-    public GroupMatchMmrDto matchCompleteMmr(@RequestParam int userId, String teamName) throws Exception {
+    public GroupMatchMmrDto matchCompleteMmr(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
         GroupMatchMmrDto groupMatchDto = mmrRankService.matchCompleteUserMmr(userId, teamName);
         
@@ -83,9 +82,9 @@ public class MainController {
 
 
     // All(포지션, 랭크, MMR) 매칭 start -----------
-    @PostMapping("/match/all")
+    @PostMapping("/match/all/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchAll(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchAll(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = allPositionService.matchUserAll(userId);
         
@@ -93,9 +92,9 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/all/cancel")
+    @PostMapping("/match/all/cancel/{userId}")
     @ResponseBody
-    public HashMap<String, String> teamListDeleteAll(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> teamListDeleteAll(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = allPositionService.teamListDeleteUserAllPosition(userId);
 
@@ -104,9 +103,9 @@ public class MainController {
 
 
     // 대전 매칭 완료 된 이후 수락하기 
-    @PostMapping("/match/all/accept")
+    @PostMapping("/match/all/accept/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchAcceptAll(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchAcceptAll(@PathVariable int userId) throws Exception {
         
         HashMap<String, String> result = allPositionService.matchAcceptUserAll(userId);
 
@@ -114,9 +113,9 @@ public class MainController {
     }
 
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/all/complete")
+    @PostMapping("/match/all/complete/{userId}/{teamName}")
     @ResponseBody
-    public GroupMatchAllDto matchCompleteAll(@RequestParam int userId, String teamName) throws Exception {
+    public GroupMatchAllDto matchCompleteAll(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
         GroupMatchAllDto groupMatchDto = allPositionService.matchCompleteUserAll(userId, teamName);
         
@@ -128,9 +127,9 @@ public class MainController {
 
 
     // Position(Position, MMR) 매칭 start -----------
-    @PostMapping("/match/position")
+    @PostMapping("/match/position/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchPosition(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchPosition(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = allPositionService.matchUserPosition(userId);
         
@@ -138,9 +137,9 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/position/cancel")
+    @PostMapping("/match/position/cancel/{userId}")
     @ResponseBody
-    public HashMap<String, String> teamListDeletePosition(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> teamListDeletePosition(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = allPositionService.teamListDeleteUserAllPosition(userId);
 
@@ -148,18 +147,18 @@ public class MainController {
     }
 
     // 대전 매칭 완료 된 이후 수락하기 
-    @PostMapping("/match/position/accept")
+    @PostMapping("/match/position/accept/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchAcceptPosition(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchAcceptPosition(@PathVariable int userId) throws Exception {
         
         HashMap<String, String> result = allPositionService.matchAcceptUserPosition(userId);
 
         return result;
     }
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/position/complete")
+    @PostMapping("/match/position/complete/{userId}/{teamName}")
     @ResponseBody
-    public GroupMatchPositionDto matchCompletePosition(@RequestParam int userId, String teamName) throws Exception {
+    public GroupMatchPositionDto matchCompletePosition(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
         GroupMatchPositionDto groupMatchDto = allPositionService.matchCompleteUserPosition(userId, teamName);
         
@@ -170,9 +169,9 @@ public class MainController {
 
 
     // Rank(Rank, MMR) 매칭 start -----------
-    @PostMapping("/match/rank")
+    @PostMapping("/match/rank/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchRank(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchRank(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = mmrRankService.matchUserRank(userId);
         
@@ -180,9 +179,9 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/rank/cancel")
+    @PostMapping("/match/rank/cancel/{userId}")
     @ResponseBody
-    public HashMap<String, String> teamListDeleteRank(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> teamListDeleteRank(@PathVariable int userId) throws Exception {
 
         HashMap<String, String> result = mmrRankService.teamListDeleteUserMmrRank(userId);
 
@@ -190,9 +189,9 @@ public class MainController {
     }
 
     // 대전 매칭 완료 된 이후 수락하기 
-    @PostMapping("/match/rank/accept")
+    @PostMapping("/match/rank/accept/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchAcceptRank(@RequestParam int userId) throws Exception {
+    public HashMap<String, String> matchAcceptRank(@PathVariable int userId) throws Exception {
         
         HashMap<String, String> result = mmrRankService.matchAcceptUserRank(userId);
 
@@ -200,9 +199,9 @@ public class MainController {
     }
 
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/rank/complete")
+    @PostMapping("/match/rank/complete/{userId}/{teamName}")
     @ResponseBody
-    public GroupMatchRankDto matchCompleteRank(@RequestParam int userId, String teamName) throws Exception {
+    public GroupMatchRankDto matchCompleteRank(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
         GroupMatchRankDto groupMatchDto = mmrRankService.matchCompleteUserRank(userId, teamName);
         
