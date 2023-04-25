@@ -19,7 +19,7 @@
         WHERE ts.SETTING_ID = 3
     </select>
 
-    <select id="findBySettingRankId" resultType="com.lol.match.main.model.SettingDto">
+    <select id="findBySettingRankingId" resultType="com.lol.match.main.model.SettingDto">
         SELECT * FROM TB_SETTING ts 
         WHERE ts.SETTING_ID = 4
     </select>
@@ -29,8 +29,8 @@
         WHERE tu.USER_ID = #{userId}
     </select>
 
-    <select id="findByRankUserId" resultType="com.lol.match.main.model.UserRankDto">
-        SELECT * FROM TB_USER_RANK tu
+    <select id="findByRankingUserId" resultType="com.lol.match.main.model.UserRankingDto">
+        SELECT * FROM TB_USER_RANKING tu
         WHERE tu.USER_ID = #{userId}
     </select>
 
@@ -44,14 +44,14 @@
         WHERE tu.USER_ID = #{userId}
     </select>
 
-    <select id="findByRank" resultType="com.lol.match.main.model.RankDto">
-        SELECT * FROM TB_RANK 
-        ORDER BY RANK_LEVEL
+    <select id="findByRanking" resultType="com.lol.match.main.model.RankingDto">
+        SELECT * FROM TB_RANKING 
+        ORDER BY RANKING_LEVEL
     </select>
 
-    <select id="findByRankId" resultType="com.lol.match.main.model.RankDto">
-        SELECT * FROM TB_RANK 
-        WHERE RANK_ID = #{rankId} 
+    <select id="findByRankingId" resultType="com.lol.match.main.model.RankingDto">
+        SELECT * FROM TB_RANKING 
+        WHERE RANKING_ID = #{rankingId} 
     </select>
 
     <select id="findByPosition" resultType="com.lol.match.main.model.PositionDto">

@@ -18,7 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lol.match.main.mapper.MainMapper;
-import com.lol.match.main.model.RankDto;
+import com.lol.match.main.model.RankingDto;
 import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserAllDto;
 import com.lol.match.main.model.UserPositionDto;
@@ -66,27 +66,27 @@ public class CommonService {
         return result;
     }
 
-    protected List<String> rankListAdd(RankDto rankdto, List<Object> teamList, SettingDto settingDto) {
+    protected List<String> rankListAdd(RankingDto rankdto, List<Object> teamList, SettingDto settingDto) {
         
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
-        List<RankDto> rankDtoList = mainMapper.findByRank();
+        List<RankingDto> rankDtoList = mainMapper.findByRanking();
         
         List<String> rankList = new ArrayList<>();
 
         List<String> rankFilterList = new ArrayList<>();
 
-        if(rankdto.getRankLevel()==1) {
-            rankList.add(rankDtoList.get(1).getRankName());
+        if(rankdto.getRankingLevel()==1) {
+            rankList.add(rankDtoList.get(1).getRankingName());
         }
-        else if(rankdto.getRankLevel()==rankDtoList.size()) {
-            rankList.add(rankDtoList.get(rankDtoList.size()-2).getRankName());
+        else if(rankdto.getRankingLevel()==rankDtoList.size()) {
+            rankList.add(rankDtoList.get(rankDtoList.size()-2).getRankingName());
         }
         else {
-            rankList.add(rankDtoList.get(rankdto.getRankLevel()-2).getRankName());
-            rankList.add(rankDtoList.get(rankdto.getRankLevel()).getRankName());
+            rankList.add(rankDtoList.get(rankdto.getRankingLevel()-2).getRankingName());
+            rankList.add(rankDtoList.get(rankdto.getRankingLevel()).getRankingName());
         }
-        rankList.add(rankdto.getRankName());
+        rankList.add(rankdto.getRankingName());
 
         // 랭크 필터링
         for (Object key : teamList) {
@@ -282,7 +282,7 @@ public class CommonService {
         ListOperations<String, Object> listOperations = redisTemplate.opsForList();
 
         UserAllDto userAllDto = mainMapper.findByAllUserId(userId);
-        String rank = mainMapper.findByRankId(userAllDto.getRankId()).getRankName();
+        String ranking = mainMapper.findByRankingId(userAllDto.getRankingId()).getRankingName();
         String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
 
         String teamName = "";
@@ -293,7 +293,7 @@ public class CommonService {
                 if(Integer.valueOf(hashOperations.get("position:"+positionList.get(i), position).toString())>1) {
                     if(i==positionList.size()-1) {
                         String uuid = UUID.randomUUID().toString();
-                        teamName = rank+"_"+min+"_"+max+"_"+uuid;
+                        teamName = ranking+"_"+min+"_"+max+"_"+uuid;
                         teamCreate(teamName, userAllDto);
 
                         log.info("일치하는 mmr이 있으나 포지션이 없어서 팀 새로 생성");
@@ -324,7 +324,7 @@ public class CommonService {
     }
 
     // 팀 정보 지우기 : map, accept, acceptTime
-    public void deleteMatchInfoMmrRank(String listName) {
+    public void deleteMatchInfoMmrRanking(String listName) {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -338,7 +338,7 @@ public class CommonService {
 
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
-        deleteMatchInfoMmrRank(listName);
+        deleteMatchInfoMmrRanking(listName);
 
         hashOperations.getOperations().delete("position:"+listName);
     }

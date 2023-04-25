@@ -23,7 +23,7 @@ import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.GroupMatchAllDto;
 import com.lol.match.main.model.GroupMatchPositionDto;
 import com.lol.match.main.model.PositionDto;
-import com.lol.match.main.model.RankDto;
+import com.lol.match.main.model.RankingDto;
 import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserAllDto;
 import com.lol.match.main.model.UserPositionDto;
@@ -57,7 +57,7 @@ public class AllPositionService extends CommonService{
         // DB로 세팅 정보 가져오기
         SettingDto settingDto = mainMapper.findBySettingAllId();
 
-        // mmr, rank, position 고려하여 매칭 시켜주는 경우 
+        // mmr, ranking, position 고려하여 매칭 시켜주는 경우 
         return allIsMap(userId, settingDto);
 
     }
@@ -79,7 +79,7 @@ public class AllPositionService extends CommonService{
             throw new BusinessLogicException(ExceptionCode.BAD_REQUEST);
         }
         else {
-            RankDto rankdto = mainMapper.findByRankId(userAllDto.getRankId());
+            RankingDto rankdto = mainMapper.findByRankingId(userAllDto.getRankingId());
             String position = mainMapper.findByPositionId(userAllDto.getPositionId()).getPositionName();
     
             String teamName = "";
@@ -117,7 +117,7 @@ public class AllPositionService extends CommonService{
                 // 일치하는 mmr이 없을 경우
                 log.info("새롭게 팀을 추가함 ");
                 String uuid = UUID.randomUUID().toString();
-                teamName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
+                teamName = rankdto.getRankingName()+"_"+min+"_"+max+"_"+uuid;
                 teamCreate(teamName, userAllDto);
                 hashOperations.put("position:"+teamName, position, "1");
                 listOperations.rightPush("teamList", teamName);
@@ -472,8 +472,8 @@ public class AllPositionService extends CommonService{
             for(Object key : teamList) {
                 if(hashOperations.size("match:"+key.toString()) < (settingDto.getSettingHeadcount()*2) && hashOperations.size("match:"+key.toString()) > 0) {
 
-                    String minRange = key.toString().split("_")[1];
-                    String maxRange = key.toString().split("_")[2];
+                    String minRange = key.toString().split("_")[0];
+                    String maxRange = key.toString().split("_")[1];
         
                     if (Integer.parseInt(minRange) <= mmr) {
                         if (Integer.parseInt(maxRange) >= mmr) {

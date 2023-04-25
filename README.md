@@ -7,20 +7,20 @@
 
 ## 📖 상세 내용
 
-즐겨하는 게임인 LOL의 매칭 시스템을 직접 만들어 보면 어떨까?해서 만들게된 프로젝트입니다. 팀의 인원, MMR의 격차, 게임 수락 시간 등 원하는 타입(Position, Rank, MMR, All)에 따른 매칭을 시킬수 있습니다. 누구나 쉽게 해당 코드를 풀 받아 커스텀하여 사용할 수 있습니다. 
+즐겨하는 게임인 LOL의 매칭 시스템을 직접 만들어 보면 어떨까?해서 만들게된 프로젝트입니다. 팀의 인원, MMR의 격차, 게임 수락 시간 등 DB에 설정한 후 원하는 타입(Position, Ranking, MMR, All)에 따른 매칭을 시킬수 있습니다. 
 
 
 ## 📱 구현 기능 (API)
 
- 타입에 따른 매칭 방법 TYPE = [’ALL’, MMR’, ‘POSITION’, ‘RANK’]
+ 타입에 따른 매칭 방법 TYPE = [’ALL’, MMR’, ‘POSITION’, 'RANKING']
     
-    ALL 타입 매칭 : mmr과 position, rank 3가지 요소 모두를 고려한 매칭
+    ALL 타입 매칭 : mmr과 position, ranking 3가지 요소 모두를 고려한 매칭
     
     MMR 타입 매칭 : mmr 요소만 고려한 매칭
     
     POSITION 타입 매칭 : mmr과 postion 요소만 고려한 매칭
     
-    RANK 타입 매칭 : mmr과 rank 요소만 고려한 매칭
+    RANKING 타입 매칭 : mmr과 ranking 요소만 고려한 매칭
 
     공통 기능 : 
 
@@ -44,13 +44,13 @@ src/main/java/com/lol/match
 │   ├── exception
 │   └── scheduler
 ├── config // redis 설정
-├── main // 매칭 로직
+└── main // 매칭 로직
    ├── controller
    ├── mapper
    ├── model // 매칭 dto
    └── service 
         ├── AllPositionService // all타입와 position 타입의 매칭
-        └── MmrRankService // mmr타입와 rank 타입의 매칭
+        └── MmrRankService // mmr타입와 ranking 타입의 매칭
 ~~~
 
 ## ALL 타입 매칭 사용법

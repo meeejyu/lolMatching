@@ -5,12 +5,12 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-public class RankDto {
+public class RankingDto {
     
-    private int rankId;
+    private int rankingId;
 
-    private String rankName;
+    private String rankingName;
 
-    private int rankLevel;
+    private int rankingLevel;
 
 }

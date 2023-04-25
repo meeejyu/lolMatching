@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lol.match.common.exception.BusinessLogicException;
 import com.lol.match.common.exception.ExceptionCode;
-import com.lol.match.main.model.GroupMatchRankDto;
+import com.lol.match.main.model.GroupMatchRankingDto;
 import com.lol.match.main.mapper.MainMapper;
 import com.lol.match.main.model.GroupMatchMmrDto;
-import com.lol.match.main.model.RankDto;
+import com.lol.match.main.model.RankingDto;
 import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserMmrDto;
-import com.lol.match.main.model.UserRankDto;
+import com.lol.match.main.model.UserRankingDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 // @RequiredArgsConstructor
-public class MmrRankService extends CommonService{
+public class MmrRankingService extends CommonService{
     
     // private final RedisTemplate<String, Object> redisTemplate;
 
@@ -43,7 +43,7 @@ public class MmrRankService extends CommonService{
 
     // private final CommonService commonService;
 
-    public MmrRankService(RedisTemplate<String, Object> redisTemplate, MainMapper mainMapper, ObjectMapper objectMapper) {
+    public MmrRankingService(RedisTemplate<String, Object> redisTemplate, MainMapper mainMapper, ObjectMapper objectMapper) {
         super(redisTemplate, mainMapper, objectMapper);
     }
     
@@ -111,8 +111,8 @@ public class MmrRankService extends CommonService{
         return result;
     }
 
-    // 팀에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : Mmr & Rank
-    public HashMap<String, String> teamListDeleteUserMmrRank(int userId) throws Exception {
+    // 팀에서 유저 정보 삭제 : 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : Mmr & Ranking
+    public HashMap<String, String> teamListDeleteUserMmrRanking(int userId) throws Exception {
 
         HashMap<String, String> result = new HashMap<>();
 
@@ -203,7 +203,7 @@ public class MmrRankService extends CommonService{
                         mmrDivide(teamName, settingDto.getSettingHeadcount());
 
                         // 팀 정보 제외 전체 삭제
-                        deleteMatchInfoMmrRank(teamName);                        
+                        deleteMatchInfoMmrRanking(teamName);                        
                     }
                     return result;
                 }
@@ -215,7 +215,7 @@ public class MmrRankService extends CommonService{
                     if(condition) {
                         mmrDivide(teamName, settingDto.getSettingHeadcount());
                         // 팀 정보 제외 전체 삭제
-                        deleteMatchInfoMmrRank(teamName);                        
+                        deleteMatchInfoMmrRanking(teamName);                        
                     }
                 return result;
             }
@@ -375,13 +375,13 @@ public class MmrRankService extends CommonService{
     // MMR 매칭 end -----------
 
 
-     // Rank(Rank, MMR) 매칭 start -----------
-     public HashMap<String, String> matchUserRank(int userId) throws Exception {
+     // Ranking(Ranking, MMR) 매칭 start -----------
+     public HashMap<String, String> matchUserRanking(int userId) throws Exception {
 
         // DB로 세팅 정보 가져오기
-        SettingDto settingDto = mainMapper.findBySettingRankId();
+        SettingDto settingDto = mainMapper.findBySettingRankingId();
 
-        // mmr, rank 매칭 시켜주는 경우 
+        // mmr, ranking 매칭 시켜주는 경우 
         return rankIsMap(userId, settingDto);
 
     }
@@ -394,9 +394,9 @@ public class MmrRankService extends CommonService{
 
         HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
-        UserRankDto userRankDto = mainMapper.findByRankUserId(userId);
+        UserRankingDto userRankingDto = mainMapper.findByRankingUserId(userId);
 
-        int mmr = userRankDto.getUserMmr();
+        int mmr = userRankingDto.getUserMmr();
 
         String id = Integer.toString(userId);
 
@@ -409,7 +409,7 @@ public class MmrRankService extends CommonService{
             int min = mmr - range > 0 ? mmr - range : 0;
             int max = mmr + range;
     
-            RankDto rankdto = mainMapper.findByRankId(userRankDto.getRankId());
+            RankingDto rankdto = mainMapper.findByRankingId(userRankingDto.getRankingId());
 
             Long listSize = listOperations.size("teamList");
             List<Object> teamList = listOperations.range("teamList", 0, listSize-1);
@@ -425,7 +425,7 @@ public class MmrRankService extends CommonService{
                 if (Integer.parseInt(minRange) <= mmr) {
                     if (Integer.parseInt(maxRange) >= mmr) {
                         teamName = fileterList;
-                        teamCreate(teamName, userRankDto);
+                        teamCreate(teamName, userRankingDto);
                         break;
                     }
                 }           
@@ -433,8 +433,8 @@ public class MmrRankService extends CommonService{
 
             if(teamName.equals("")) {
                 String uuid = UUID.randomUUID().toString();
-                teamName = rankdto.getRankName()+"_"+min+"_"+max+"_"+uuid;
-                teamCreate(teamName, userRankDto);
+                teamName = rankdto.getRankingName()+"_"+min+"_"+max+"_"+uuid;
+                teamCreate(teamName, userRankingDto);
                 listOperations.rightPush("teamList", teamName);
             }
             result = teamAddResult(id, teamName, settingDto);
@@ -444,7 +444,7 @@ public class MmrRankService extends CommonService{
     }
 
     // 대전 매칭 완료하기 
-    public HashMap<String, String> matchAcceptUserRank(int userId) throws Exception {
+    public HashMap<String, String> matchAcceptUserRanking(int userId) throws Exception {
     
         HashMap<String, String> result = new HashMap<>();
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -452,7 +452,7 @@ public class MmrRankService extends CommonService{
         boolean condition = true;
 
         // DB로 세팅 정보 가져오기
-        SettingDto settingDto = mainMapper.findBySettingRankId();
+        SettingDto settingDto = mainMapper.findBySettingRankingId();
 
         String id = Integer.toString(userId);
         
@@ -509,7 +509,7 @@ public class MmrRankService extends CommonService{
                         rankDivide(teamName, settingDto.getSettingHeadcount());
 
                         // 팀 정보 제외 전체 삭제
-                        deleteMatchInfoMmrRank(teamName);                        
+                        deleteMatchInfoMmrRanking(teamName);                        
                     }
                     return result;
                 }
@@ -521,7 +521,7 @@ public class MmrRankService extends CommonService{
                     if(condition) {
                         rankDivide(teamName, settingDto.getSettingHeadcount());
                         // 팀 정보 제외 전체 삭제
-                        deleteMatchInfoMmrRank(teamName);                        
+                        deleteMatchInfoMmrRanking(teamName);                        
                     }
                 return result;
             }
@@ -556,37 +556,37 @@ public class MmrRankService extends CommonService{
 
         Map<Object, Object> map = hashOperations.entries("accept:"+teamName);
 
-        List<UserRankDto> userInfoA = new ArrayList<>();
+        List<UserRankingDto> userInfoA = new ArrayList<>();
 
-        List<UserRankDto> userListAll = new ArrayList<>();
+        List<UserRankingDto> userListAll = new ArrayList<>();
 
         // mmr 나누기
         for(Object key : map.keySet() ){
-            UserRankDto user = objectMapper.readValue(map.get(key).toString(), UserRankDto.class);
+            UserRankingDto user = objectMapper.readValue(map.get(key).toString(), UserRankingDto.class);
             userListAll.add(user);
         }
 
         userInfoA.add(userListAll.get(0));
-        HashMap<Integer, List<List<UserRankDto>>> teamResult = new HashMap<>();
+        HashMap<Integer, List<List<UserRankingDto>>> teamResult = new HashMap<>();
 
         // A팀 - B팀의 값이 최솟값일 경우 팀 매칭
         rankCombi(teamResult, userListAll, userInfoA, headCount, 1);
         
         for(Integer key : teamResult.keySet()) {
             for (int i = 0; i < teamResult.get(key).get(0).size(); i++) {
-                UserRankDto userRankDtoA = teamResult.get(key).get(0).get(i);
-                UserRankDto userRankDtoB = teamResult.get(key).get(1).get(i);
-                hashOperations.put("teamA:"+teamName, Integer.toString(userRankDtoA.getUserId()), objectMapper.writeValueAsString(userRankDtoA));
-                hashOperations.put("teamB:"+teamName, Integer.toString(userRankDtoB.getUserId()), objectMapper.writeValueAsString(userRankDtoB));
+                UserRankingDto userRankingDtoA = teamResult.get(key).get(0).get(i);
+                UserRankingDto userRankingDtoB = teamResult.get(key).get(1).get(i);
+                hashOperations.put("teamA:"+teamName, Integer.toString(userRankingDtoA.getUserId()), objectMapper.writeValueAsString(userRankingDtoA));
+                hashOperations.put("teamB:"+teamName, Integer.toString(userRankingDtoB.getUserId()), objectMapper.writeValueAsString(userRankingDtoB));
             }
             log.info("최종값 : " + key);
         }
     }
 
-    private void rankCombi(HashMap<Integer, List<List<UserRankDto>>> teamResult, List<UserRankDto> userListAll, List<UserRankDto> userInfoA, int headCount, int count) {    
+    private void rankCombi(HashMap<Integer, List<List<UserRankingDto>>> teamResult, List<UserRankingDto> userListAll, List<UserRankingDto> userInfoA, int headCount, int count) {    
 
         if(userInfoA.size() == headCount) {
-            List<UserRankDto> userInfoB = new ArrayList<>();
+            List<UserRankingDto> userInfoB = new ArrayList<>();
             
             for (int j = 0; j < userListAll.size(); j++) {
                 if(userInfoA.contains(userListAll.get(j))==false) {
@@ -595,7 +595,7 @@ public class MmrRankService extends CommonService{
             }
             int sumA = 0;
             int sumB = 0;
-            List<List<UserRankDto>> teamList = new ArrayList<>();
+            List<List<UserRankingDto>> teamList = new ArrayList<>();
 
             for (int j = 0; j < userInfoA.size(); j++) {
                 sumA += userInfoA.get(j).getUserMmr();
@@ -621,7 +621,7 @@ public class MmrRankService extends CommonService{
         }
         else {
             for (int i = count; i < userListAll.size(); i++) {
-                List<UserRankDto> userA = new ArrayList<>();
+                List<UserRankingDto> userA = new ArrayList<>();
 
                 for (int j = 0; j < userInfoA.size(); j++) {
                     userA.add(userInfoA.get(j));
@@ -637,7 +637,7 @@ public class MmrRankService extends CommonService{
     }
 
     // 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    public GroupMatchRankDto matchCompleteUserRank(int userId, String teamName) throws Exception {
+    public GroupMatchRankingDto matchCompleteUserRanking(int userId, String teamName) throws Exception {
     
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -657,27 +657,27 @@ public class MmrRankService extends CommonService{
         Map<Object, Object> teamAMap = hashOperations.entries("teamA:"+teamName);
         Map<Object, Object> teamBMap = hashOperations.entries("teamB:"+teamName);
 
-        GroupMatchRankDto groupMatchDto = new GroupMatchRankDto(userInfo, teamInfoRank(teamAMap), teamInfoRank(teamBMap));
+        GroupMatchRankingDto groupMatchDto = new GroupMatchRankingDto(userInfo, teamInfoRanking(teamAMap), teamInfoRanking(teamBMap));
         
         return groupMatchDto;
 
     }
 
     // 팀 정보 List 형태로 저장
-    private List<UserRankDto> teamInfoRank(Map<Object, Object> teamMap) throws JsonMappingException, JsonProcessingException {
+    private List<UserRankingDto> teamInfoRanking(Map<Object, Object> teamMap) throws JsonMappingException, JsonProcessingException {
         int count = 0;
 
-        List<UserRankDto> teamList = new ArrayList<>();
+        List<UserRankingDto> teamList = new ArrayList<>();
 
         for(Object key : teamMap.keySet()) {
-            UserRankDto userRankDto = objectMapper.readValue(teamMap.get(key).toString(), UserRankDto.class);
-            teamList.add(count, userRankDto);
+            UserRankingDto userRankingDto = objectMapper.readValue(teamMap.get(key).toString(), UserRankingDto.class);
+            teamList.add(count, userRankingDto);
             count += 1;
         }
         return teamList;
     }
 
-    // Rank(Rank, MMR) 매칭 end -----------
+    // Ranking(Ranking, MMR) 매칭 end -----------
 
     // mmr team 생성
     private void teamCreate(String teamName, UserMmrDto userMmrDto) throws JsonProcessingException {
@@ -689,13 +689,13 @@ public class MmrRankService extends CommonService{
         hashOperations.put("match:"+teamName, id, user);
     }
 
-    // rank team 생성
-    private void teamCreate(String teamName, UserRankDto userRankDto) throws JsonProcessingException {
-        String id = Integer.toString(userRankDto.getUserId());
+    // ranking team 생성
+    private void teamCreate(String teamName, UserRankingDto userRankingDto) throws JsonProcessingException {
+        String id = Integer.toString(userRankingDto.getUserId());
         
-        userRankDto.setTeamName(teamName);
+        userRankingDto.setTeamName(teamName);
         HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-        String user = objectMapper.writeValueAsString(userRankDto);
+        String user = objectMapper.writeValueAsString(userRankingDto);
         hashOperations.put("match:"+teamName, id, user);
     }
 }

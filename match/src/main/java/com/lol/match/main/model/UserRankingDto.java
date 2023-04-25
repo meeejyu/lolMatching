@@ -3,7 +3,7 @@ package com.lol.match.main.model;
 import lombok.Data;
 
 @Data
-public class UserRankDto {
+public class UserRankingDto {
 
     private int userId;
 
@@ -11,7 +11,7 @@ public class UserRankDto {
 
     private String userNickname;
 
-    private int rankId;
+    private int rankingId;
 
     private String teamName;
 

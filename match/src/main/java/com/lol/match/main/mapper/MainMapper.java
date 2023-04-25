@@ -6,12 +6,12 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.lol.match.main.model.PositionDto;
-import com.lol.match.main.model.RankDto;
+import com.lol.match.main.model.RankingDto;
 import com.lol.match.main.model.SettingDto;
 import com.lol.match.main.model.UserAllDto;
 import com.lol.match.main.model.UserMmrDto;
 import com.lol.match.main.model.UserPositionDto;
-import com.lol.match.main.model.UserRankDto;
+import com.lol.match.main.model.UserRankingDto;
 
 @Mapper
 public interface MainMapper {
@@ -22,19 +22,19 @@ public interface MainMapper {
 
     SettingDto findBySettingPositionId();
 
-    SettingDto findBySettingRankId();
+    SettingDto findBySettingRankingId();
 
     UserAllDto findByAllUserId(@Param("userId")int userId);
 
-    UserRankDto findByRankUserId(@Param("userId")int userId);
+    UserRankingDto findByRankingUserId(@Param("userId")int userId);
 
     UserPositionDto findByPositionUserId(@Param("userId")int userId);
 
     UserMmrDto findByMmrUserId(@Param("userId")int userId);
 
-    List<RankDto> findByRank();
+    List<RankingDto> findByRanking();
 
-    RankDto findByRankId(@Param("rankId")int rankId);
+    RankingDto findByRankingId(@Param("rankingId")int rankingId);
 
     List<PositionDto> findByPosition();
 

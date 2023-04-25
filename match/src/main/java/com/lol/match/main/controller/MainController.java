@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.lol.match.main.model.GroupMatchAllDto;
 import com.lol.match.main.model.GroupMatchMmrDto;
 import com.lol.match.main.model.GroupMatchPositionDto;
-import com.lol.match.main.model.GroupMatchRankDto;
+import com.lol.match.main.model.GroupMatchRankingDto;
 import com.lol.match.main.service.AllPositionService;
-import com.lol.match.main.service.MmrRankService;
+import com.lol.match.main.service.MmrRankingService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +24,7 @@ public class MainController {
 
     // private final CommonService commonService;
 
-    private final MmrRankService mmrRankService;
+    private final MmrRankingService mmrRankingService;
 
     private final AllPositionService allPositionService;
 
@@ -42,7 +42,7 @@ public class MainController {
     @ResponseBody
     public HashMap<String, String> matchMmr(@PathVariable int userId) throws Exception {
 
-        HashMap<String, String> result = mmrRankService.matchUserMmr(userId);
+        HashMap<String, String> result = mmrRankingService.matchUserMmr(userId);
         
         return result;
     }
@@ -52,7 +52,7 @@ public class MainController {
     @ResponseBody
     public HashMap<String, String> teamListDeleteMmr(@PathVariable int userId) throws Exception {
 
-        HashMap<String, String> result = mmrRankService.teamListDeleteUserMmrRank(userId);
+        HashMap<String, String> result = mmrRankingService.teamListDeleteUserMmrRanking(userId);
 
         return result;
     }
@@ -62,7 +62,7 @@ public class MainController {
     @ResponseBody
     public HashMap<String, String> matchAcceptMmr(@PathVariable int userId) throws Exception {
         
-        HashMap<String, String> result = mmrRankService.matchAcceptUserMmr(userId);
+        HashMap<String, String> result = mmrRankingService.matchAcceptUserMmr(userId);
 
         return result;
     }
@@ -72,7 +72,7 @@ public class MainController {
     @ResponseBody
     public GroupMatchMmrDto matchCompleteMmr(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
-        GroupMatchMmrDto groupMatchDto = mmrRankService.matchCompleteUserMmr(userId, teamName);
+        GroupMatchMmrDto groupMatchDto = mmrRankingService.matchCompleteUserMmr(userId, teamName);
         
         return groupMatchDto;
 
@@ -168,47 +168,47 @@ public class MainController {
     // Position(Position, MMR) 매칭 end -----------
 
 
-    // Rank(Rank, MMR) 매칭 start -----------
-    @PostMapping("/match/rank/{userId}")
+    // Ranking(Ranking, MMR) 매칭 start -----------
+    @PostMapping("/match/ranking/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchRank(@PathVariable int userId) throws Exception {
+    public HashMap<String, String> matchRanking(@PathVariable int userId) throws Exception {
 
-        HashMap<String, String> result = mmrRankService.matchUserRank(userId);
+        HashMap<String, String> result = mmrRankingService.matchUserRanking(userId);
         
         return result;
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/rank/cancel/{userId}")
+    @PostMapping("/match/ranking/cancel/{userId}")
     @ResponseBody
-    public HashMap<String, String> teamListDeleteRank(@PathVariable int userId) throws Exception {
+    public HashMap<String, String> teamListDeleteRanking(@PathVariable int userId) throws Exception {
 
-        HashMap<String, String> result = mmrRankService.teamListDeleteUserMmrRank(userId);
+        HashMap<String, String> result = mmrRankingService.teamListDeleteUserMmrRanking(userId);
 
         return result;
     }
 
     // 대전 매칭 완료 된 이후 수락하기 
-    @PostMapping("/match/rank/accept/{userId}")
+    @PostMapping("/match/ranking/accept/{userId}")
     @ResponseBody
-    public HashMap<String, String> matchAcceptRank(@PathVariable int userId) throws Exception {
+    public HashMap<String, String> matchAcceptRanking(@PathVariable int userId) throws Exception {
         
-        HashMap<String, String> result = mmrRankService.matchAcceptUserRank(userId);
+        HashMap<String, String> result = mmrRankingService.matchAcceptUserRanking(userId);
 
         return result;
     }
 
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/rank/complete/{userId}/{teamName}")
+    @PostMapping("/match/ranking/complete/{userId}/{teamName}")
     @ResponseBody
-    public GroupMatchRankDto matchCompleteRank(@PathVariable int userId, @PathVariable String teamName) throws Exception {
+    public GroupMatchRankingDto matchCompleteRanking(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
-        GroupMatchRankDto groupMatchDto = mmrRankService.matchCompleteUserRank(userId, teamName);
+        GroupMatchRankingDto groupMatchDto = mmrRankingService.matchCompleteUserRanking(userId, teamName);
         
         return groupMatchDto;
 
     }
-    // Rank(Rank, MMR) 매칭 end -----------
+    // Ranking(Ranking, MMR) 매칭 end -----------
 
 
     // 게임이 종료된 이후 해당 메소드 실행
@@ -216,18 +216,18 @@ public class MainController {
     @ResponseBody
     public String matchEnd(@PathVariable String listName) {
         
-        mmrRankService.deleteMatchAll(listName);
+        mmrRankingService.deleteMatchAll(listName);
 
         return "ok";
     }
     
-    // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행 : mmr, rank
-    @DeleteMapping("/match/delete/mmr/rank/{listName}")
+    // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행 : mmr, ranking
+    @DeleteMapping("/match/delete/mmr/ranking/{listName}")
     @ResponseBody
-    public String deleteMmrRank(@PathVariable String listName) {
+    public String deleteMmrRanking(@PathVariable String listName) {
         
-        mmrRankService.deleteMatchInfoMmrRank(listName);
-        mmrRankService.deleteMatchAll(listName);
+        mmrRankingService.deleteMatchInfoMmrRanking(listName);
+        mmrRankingService.deleteMatchAll(listName);
 
         return "ok";
     }
@@ -253,13 +253,13 @@ public class MainController {
         count += 1;
         System.out.println("count : " + count);
 
-        if(count < 13) {
-            // result = mmrRankService.matchUserMmr(count);
+        if(count < 7) {
+            // result = mmrRankingService.matchUserMmr(count);
             // result = allPositionService.matchUserAll(count);
-            result = allPositionService.matchUserPosition(count);
-            // result = mmrRankService.matchUserRank(count);
+            // result = allPositionService.matchUserPosition(count);
+            result = mmrRankingService.matchUserRanking(count);
         }
-        if(count == 13) {
+        if(count == 7) {
             count = 0;
         }
 
@@ -276,13 +276,13 @@ public class MainController {
         count += 1;
         System.out.println("count : " + count);
 
-        if(count < 13) {
-            // result = mmrRankService.matchAcceptUserMmr(count);
+        if(count < 7) {
+            // result = mmrRankingService.matchAcceptUserMmr(count);
             // result = allPositionService.matchAcceptUserAll(count);
-            result = allPositionService.matchAcceptUserPosition(count);
-            // result = mmrRankService.matchAcceptUserRank(count);
+            // result = allPositionService.matchAcceptUserPosition(count);
+            result = mmrRankingService.matchAcceptUserRanking(count);
         }
-        if(count == 13) {
+        if(count == 7) {
             count = 0;
         }
 

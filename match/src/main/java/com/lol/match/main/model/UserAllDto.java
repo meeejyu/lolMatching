@@ -11,7 +11,7 @@ public class UserAllDto {
 
     private String userNickname;
 
-    private int rankId;
+    private int rankingId;
 
     private int positionId;
 
