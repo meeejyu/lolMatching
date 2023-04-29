@@ -107,11 +107,11 @@ ALL 타입 매칭 API
 
 
 ### 그외 타입(MMR, POSITION, RANK) 매칭 방법 
-- MMR 타입 : [MMR 타입 상세문서](https://wirehaired-waterfall-ea2.notion.site/Matching-MMR-0ad018e093ec474c9b2d00948af29ed2)
+- MMR 타입 : [MMR 타입 상세문서](https://tall-screen-ad5.notion.site/Matching-MMR-5e62f853b0fc444fb5f0e39579bca352)
 
-- RANKING 타입 : [RANKING 타입 상세문서](https://wirehaired-waterfall-ea2.notion.site/Matching-RANKING-136a816ba60e4159900a1a399a37afe0)
+- RANKING 타입 : [RANKING 타입 상세문서](https://tall-screen-ad5.notion.site/Matching-RANKING-ff31c1612d48453f8ac4a1f04737cbac)
 
-- POSITION 타입 : [POSITION 타입 상세문서](https://wirehaired-waterfall-ea2.notion.site/Matching-POSITION-df194d01522d42b3b52c713637428eba)
+- POSITION 타입 : [POSITION 타입 상세문서](https://tall-screen-ad5.notion.site/Matching-POSITION-59c77bc9062b43a7b4008799c31ebe22)
 
 ### 💡 성과
 
