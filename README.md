@@ -35,7 +35,7 @@
 - Spring Boot, Spring MVC
 - Mybatis
 - Gradle
-- MariaDB, redis
+- MariaDB, Redis
 
 ## Project Sturucture
 ~~~
