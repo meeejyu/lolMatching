@@ -212,33 +212,33 @@ public class MainController {
 
 
     // 게임이 종료된 이후 해당 메소드 실행
-    @DeleteMapping("/match/end/{listName}")
+    @DeleteMapping("/match/end/{teamName}")
     @ResponseBody
-    public String matchEnd(@PathVariable String listName) {
+    public String matchEnd(@PathVariable String teamName) {
         
-        mmrRankingService.deleteMatchAll(listName);
+        mmrRankingService.deleteMatchAll(teamName);
 
         return "ok";
     }
     
     // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행 : mmr, ranking
-    @DeleteMapping("/match/mmr/ranking/{listName}")
+    @DeleteMapping("/match/mmr/ranking/{teamName}")
     @ResponseBody
-    public String deleteMmrRanking(@PathVariable String listName) {
+    public String deleteMmrRanking(@PathVariable String teamName) {
         
-        mmrRankingService.deleteMatchInfoMmrRanking(listName);
-        mmrRankingService.deleteMatchAll(listName);
+        mmrRankingService.deleteMatchInfoMmrRanking(teamName);
+        mmrRankingService.deleteMatchAll(teamName);
 
         return "ok";
     }
 
     // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행 : all, position
-    @DeleteMapping("/match/all/position/{listName}")
+    @DeleteMapping("/match/all/position/{teamName}")
     @ResponseBody
-    public String deleteAllPosition(@PathVariable String listName) {
+    public String deleteAllPosition(@PathVariable String teamName) {
         
-        allPositionService.deleteMatchInfoAllPosition(listName);
-        allPositionService.deleteMatchAll(listName);
+        allPositionService.deleteMatchInfoAllPosition(teamName);
+        allPositionService.deleteMatchAll(teamName);
 
         return "ok";
     }
