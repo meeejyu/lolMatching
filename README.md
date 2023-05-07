@@ -62,12 +62,12 @@ src/main/java/com/lol/match
 
 ### API
 ALL 타입 매칭 API
-- 매칭 (POST /match/all/{userId})
-- 매칭 취소	(POST /match/all/cancel/{userId})
-- 매칭 수락	(POST /match/all/accept/{userId})
-- 매칭이 완료됐지만 아무도 수락하지 않은 경우 정보 삭제	(POST /match/delete/all/position/{listName})
-- 매칭 완료된 팀 정보 (POST /match/all/complete/{userId}/{teamName})
-- 게임 완료 후 팀 정보 삭제	(POST /match/end/{listName})
+- 매칭 (Post /match/all/{userId})
+- 매칭 취소	(Delete /match/all/{userId})
+- 매칭 수락	(Post /match/all/accept/{userId})
+- 매칭이 완료됐지만 아무도 수락하지 않은 경우 정보 삭제	(Delete /match/delete/all/position/{listName})
+- 매칭 완료된 팀 정보 (Get /match/all/complete/{userId}/{teamName})
+- 게임 완료 후 팀 정보 삭제	(Delete /match/end/{listName})
 
 ### 구현 상세
 >  매칭 로직
