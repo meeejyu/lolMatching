@@ -48,7 +48,7 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/mmr/cancel/{userId}")
+    @DeleteMapping("/match/mmr/{userId}")
     @ResponseBody
     public HashMap<String, String> teamListDeleteMmr(@PathVariable int userId) throws Exception {
 
@@ -68,7 +68,7 @@ public class MainController {
     }
 
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/mmr/complete/{userId}/{teamName}")
+    @GetMapping("/match/mmr/complete/{userId}/{teamName}")
     @ResponseBody
     public GroupMatchMmrDto matchCompleteMmr(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
@@ -92,7 +92,7 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/all/cancel/{userId}")
+    @DeleteMapping("/match/all/{userId}")
     @ResponseBody
     public HashMap<String, String> teamListDeleteAll(@PathVariable int userId) throws Exception {
 
@@ -113,7 +113,7 @@ public class MainController {
     }
 
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/all/complete/{userId}/{teamName}")
+    @GetMapping("/match/all/complete/{userId}/{teamName}")
     @ResponseBody
     public GroupMatchAllDto matchCompleteAll(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
@@ -137,7 +137,7 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/position/cancel/{userId}")
+    @DeleteMapping("/match/position/{userId}")
     @ResponseBody
     public HashMap<String, String> teamListDeletePosition(@PathVariable int userId) throws Exception {
 
@@ -156,7 +156,7 @@ public class MainController {
         return result;
     }
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/position/complete/{userId}/{teamName}")
+    @GetMapping("/match/position/complete/{userId}/{teamName}")
     @ResponseBody
     public GroupMatchPositionDto matchCompletePosition(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
@@ -179,7 +179,7 @@ public class MainController {
     }
 
     // 유저가 대전을 찾는 와중 대전 찾기를 취소한 경우 : 팀에서 해당 유저 정보 삭제
-    @PostMapping("/match/ranking/cancel/{userId}")
+    @DeleteMapping("/match/ranking/{userId}")
     @ResponseBody
     public HashMap<String, String> teamListDeleteRanking(@PathVariable int userId) throws Exception {
 
@@ -199,7 +199,7 @@ public class MainController {
     }
 
     // 대전 매칭 완료 후 팀 배정 정보 및 본인이 속한 팀 정보 주기
-    @PostMapping("/match/ranking/complete/{userId}/{teamName}")
+    @GetMapping("/match/ranking/complete/{userId}/{teamName}")
     @ResponseBody
     public GroupMatchRankingDto matchCompleteRanking(@PathVariable int userId, @PathVariable String teamName) throws Exception {
         
@@ -222,7 +222,7 @@ public class MainController {
     }
     
     // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행 : mmr, ranking
-    @DeleteMapping("/match/delete/mmr/ranking/{listName}")
+    @DeleteMapping("/match/mmr/ranking/{listName}")
     @ResponseBody
     public String deleteMmrRanking(@PathVariable String listName) {
         
@@ -233,7 +233,7 @@ public class MainController {
     }
 
     // 매칭이 완료됐지만 아무도 수락하지 않은 경우 해당 메소드 실행 : all, position
-    @DeleteMapping("/match/delete/all/position/{listName}")
+    @DeleteMapping("/match/all/position/{listName}")
     @ResponseBody
     public String deleteAllPosition(@PathVariable String listName) {
         
