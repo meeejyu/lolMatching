@@ -7,7 +7,7 @@
 
 ## 📖 상세 내용
 
-즐겨하는 게임인 LOL의 매칭 시스템을 직접 만들어 보면 어떨까?해서 만들게된 프로젝트입니다. 팀의 인원, MMR의 격차, 게임 수락 시간 등 DB에 설정한 후 원하는 타입(Position, Ranking, MMR, All)에 따른 매칭을 시킬수 있습니다. 
+즐겨하는 게임인 LOL의 매칭 시스템을 직접 만들어 보면 어떨까?해서 만들게된 프로젝트입니다. 팀의 인원, MMR의 격차, 게임 수락 시간 등 DB에 설정한 후 원하는 타입(ALL, MMR, POSITION, RANKING)에 따른 매칭을 시킬수 있습니다. 
 
 
 ## 📱 구현 기능 (API)
@@ -35,7 +35,7 @@
 - Spring Boot, Spring MVC
 - Mybatis
 - Gradle
-- MariaDB, redis
+- MariaDB, Redis
 
 ## Project Sturucture
 ~~~
@@ -62,12 +62,12 @@ src/main/java/com/lol/match
 
 ### API
 ALL 타입 매칭 API
-- 매칭 (POST /match/all/{userId})
-- 매칭 취소	(POST /match/all/cancel/{userId})
-- 매칭 수락	(POST /match/all/accept/{userId})
-- 매칭이 완료됐지만 아무도 수락하지 않은 경우 정보 삭제	(POST /match/delete/all/position/{listName})
-- 매칭 완료된 팀 정보 (POST /match/all/complete/{userId}/{teamName})
-- 게임 완료 후 팀 정보 삭제	(POST /match/end/{listName})
+- 매칭 (Post /match/all/{userId})
+- 매칭 취소	(Delete /match/all/{userId})
+- 매칭 수락	(Post /match/all/accept/{userId})
+- 매칭이 완료됐지만 아무도 수락하지 않은 경우 정보 삭제	(Delete /match/delete/all/position/{teamName})
+- 매칭 완료된 팀 정보 (Get /match/all/complete/{userId}/{teamName})
+- 게임 완료 후 팀 정보 삭제	(Delete /match/end/{teamName})
 
 ### 구현 상세
 >  매칭 로직
@@ -107,18 +107,19 @@ ALL 타입 매칭 API
 
 
 ### 그외 타입(MMR, POSITION, RANK) 매칭 방법 
-- MMR 타입 : [MMR 타입 상세문서](https://wirehaired-waterfall-ea2.notion.site/Matching-MMR-0ad018e093ec474c9b2d00948af29ed2)
+- MMR 타입 : [MMR 타입 상세문서](https://tall-screen-ad5.notion.site/Matching-MMR-5e62f853b0fc444fb5f0e39579bca352)
 
-- RANKING 타입 : [RANKING 타입 상세문서](https://wirehaired-waterfall-ea2.notion.site/Matching-RANKING-136a816ba60e4159900a1a399a37afe0)
+- RANKING 타입 : [RANKING 타입 상세문서](https://tall-screen-ad5.notion.site/Matching-RANKING-ff31c1612d48453f8ac4a1f04737cbac)
 
-- POSITION 타입 : [POSITION 타입 상세문서](https://wirehaired-waterfall-ea2.notion.site/Matching-POSITION-df194d01522d42b3b52c713637428eba)
+- POSITION 타입 : [POSITION 타입 상세문서](https://tall-screen-ad5.notion.site/Matching-POSITION-59c77bc9062b43a7b4008799c31ebe22)
 
 ### 💡 성과
 
-- 큐 시스템을 직접 만들어보며, 대기열에 대해 생각해보게 됨
+- 다양한 요소들을 매칭 시스템 구현
+    - 랭크, 포지션, mmr 수치, 팀 정원, 매칭 최대 시간, 매칭 타입을 고려한 매칭
 - 조합 알고리즘을 응용하여 mmr 수치에 따른 공정한 매칭 구현
     - 조합이란 n개의 값 중에서 r개의 숫자를 순서를 고려하지 않고 나열한 경우의 수
     - 만약 3 : 3 매칭일 경우 모든 매칭의 경우의 수를 구하여 각 팀의 mmr 수치가 최소값일 때 최종 매칭
-- 잦은 redis 통신 통해 부하가 발생할 수 있는 포인트 개선
-    - 스레드의 sleep을 통해 CPU 독점 방지
+- 잦은 Redis 통신으로 부하가 발생할 수 있는 포인트 개선
+    - 스레드의 슬립을 통해 Redis 호출 횟수 조절
 - Global Exception Handler 구현을 통해 에러 관리
